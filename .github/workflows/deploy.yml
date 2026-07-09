@@ -56,6 +56,9 @@ jobs:
           echo "::add-mask::${DEPLOY_USER}"
           echo "deploy_host=${DEPLOY_HOST}" >> "$GITHUB_OUTPUT"
           echo "deploy_user=${DEPLOY_USER}" >> "$GITHUB_OUTPUT"
+          # Available to any app's compose file as ${HOST_HOME_DIR} — e.g. dockhand
+          # uses it for a host bind mount. Harmless no-op for apps that don't.
+          echo "HOST_HOME_DIR=/home/${DEPLOY_USER}" >> /tmp/resolved.env
 
       - name: Connect to tailnet
         uses: tailscale/github-action@v3

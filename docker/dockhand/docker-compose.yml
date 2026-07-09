@@ -18,6 +18,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dockhand_data:/app/data
+      # Gives Dockhand's file browser actual host filesystem visibility — without
+      # this, "browse to locate" can never find compose files that live on the
+      # host, since docker.sock only grants Docker API control, not filesystem
+      # access. Read-write so in-UI edits work (they don't sync back to git).
+      - ${HOST_HOME_DIR}:/hostfs/home:rw
     depends_on:
       - postgres
     restart: unless-stopped
