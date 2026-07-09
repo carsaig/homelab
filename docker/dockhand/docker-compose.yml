@@ -1,1 +1,43 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dockhand
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: dockhand
+    volumes:
+      - postgres_data:/var/lib/postgresql
 
+  dockhand:
+    image: fnsys/dockhand:latest
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgres://dockhand:${POSTGRES_PASSWORD}@postgres:5432/dockhand
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dockhand_data:/app/data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    labels:
+      - "docktail.service.enable=true"
+      - "docktail.service.name=dockhand"
+      - "docktail.service.port=3000"
+      - "docktail.service.service-port=443"
+
+  docktail:
+    image: ghcr.io/marvinvr/docktail:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/tailscale:/var/run/tailscale
+    environment:
+      - TAILSCALE_OAUTH_CLIENT_ID=${TAILSCALE_OAUTH_CLIENT_ID}
+      - TAILSCALE_OAUTH_CLIENT_SECRET=${TAILSCALE_OAUTH_CLIENT_SECRET}
+      - DEFAULT_SERVICE_TAGS=tag:docktail-service
+
+volumes:
+  postgres_data:
+  dockhand_data:
