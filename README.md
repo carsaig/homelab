@@ -6,7 +6,7 @@ Docker Compose stacks for my self-hosted homelab. One folder per application und
 
 | App | Host | Access | Notes |
 |-----|------|--------|-------|
-| [dockhand](docker/dockhand) | pi | `dockhand.certain.cc` (tailnet-only), `dockhand.tortoise-bramble.ts.net` | Docker/CI-CD management UI |
+| [dockhand](docker/dockhand) | pi | `dockhand.mydomain.com` (tailnet-only), `dockhand.tailscale-domain.ts.net` | Docker/CI-CD management UI |
 
 ## Structure
 
