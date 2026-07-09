@@ -21,7 +21,7 @@ Secrets resolve via 1Password references (`.env.op`), not a locally-created `.en
 see the root [README](../../README.md#secrets--deployment) for the general mechanism.
 For this app specifically:
 
-- `POSTGRES_PASSWORD` → `op://SECRETS/Dockhand/password`
+- `POSTGRES_PASSWORD` → `op://SECRETS/Dockhand/add more/database-pw`
 - `TAILSCALE_OAUTH_CLIENT_ID` / `TAILSCALE_OAUTH_CLIENT_SECRET` → `op://SECRETS/Tailscale/Dockhand/client-id-oauth` / `client-secret-oauth` (docktail's own OAuth client, scoped to `Services:Write` + `Devices:Read/Write`, tagged `tag:docktail-service` — unrelated to the CI runner's own tailnet identity)
 - Deploy target: `op://SECRETS/Dockhand/deploy-host` + `deploy-user`
 
