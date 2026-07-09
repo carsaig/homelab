@@ -3,7 +3,7 @@
 Docker/CI-CD management UI. Host: `pi` (Raspberry Pi 5).
 
 - **Local access**: `http://<host-tailscale-ip>:3000` or the Tailscale Service (`docktail`, see below)
-- **Public-domain access**: `https://dockhand.certain.cc` — tailnet-only via NextDNS rewrite → a reverse proxy on the `proxy` host, real HTTPS, no public exposure. See the `pi` host's own infrastructure docs for the full pattern; not specific to this app.
+- **Public-domain access**: `https://dockhand.mydomain.com` — tailnet-only via NextDNS rewrite → a reverse proxy on the `proxy` host, real HTTPS, no public exposure. See the `pi` host's own infrastructure docs for the full pattern; not specific to this app.
 
 ## Gotchas
 
