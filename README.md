@@ -2,6 +2,15 @@
 
 Docker Compose stacks for my self-hosted homelab. One folder per application under `docker/`, host-agnostic — which physical host runs what is tracked here in this table, not in the folder path, so a folder never has to move if an app changes host.
 
+## Solutions used on the stack
+Secrets Management: 1Password
+Docker Management: Dockhand
+Uptime Monitoring: Uptime Kuma
+Application Monitoring: Grafana
+IaC: Terraform
+CI/CD: Github, hosting my own runners
+
+
 ## Apps
 
 | App | Host | Access | Notes |
