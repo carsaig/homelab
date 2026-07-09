@@ -1,7 +1,9 @@
-# Never commit real secrets — .env.example files document variable names only.
+# Never commit real secrets — .env.example documents variable names only,
+# .env.op contains only op:// references, never real values.
 **/.env
 **/.env.*
 !**/.env.example
+!**/.env.op
 **/secrets/
 
 # macOS

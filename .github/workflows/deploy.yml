@@ -1,0 +1,86 @@
+name: Deploy app
+
+# Generic deploy workflow for any docker/<app>/ folder in this repo.
+# Adding a new app needs no changes here — just:
+#   1. docker/<app>/.env.op          — op:// references for the compose file's ${VARS}
+#   2. a "<App>" item in the 1Password SECRETS vault with a "deploy-host" field
+#      (the target host's Tailscale IP — kept out of this public repo)
+#   3. add the app to the `options:` list below
+#
+# Secrets model:
+#   - App-level secrets (DB passwords, per-app OAuth creds, deploy host) live in
+#     1Password and are referenced by op:// paths — never committed as real values.
+#   - The runner's own bootstrap credentials (join the tailnet, SSH to the host)
+#     are plain GitHub Actions secrets, matching the existing pattern in the
+#     tailscale repo's ACL-sync workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App folder under docker/ to deploy
+        required: true
+        type: choice
+        options:
+          - dockhand
+
+concurrency:
+  group: deploy-${{ inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      APP: ${{ inputs.app }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+
+      - name: Resolve app secrets and deploy target
+        id: secrets
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          set -euo pipefail
+          op inject -i "docker/${APP}/.env.op" -o /tmp/resolved.env
+          ITEM="$(tr '[:lower:]' '[:upper:]' <<< "${APP:0:1}")${APP:1}"
+          DEPLOY_HOST="$(op read "op://SECRETS/${ITEM}/deploy-host")"
+          DEPLOY_USER="$(op read "op://SECRETS/${ITEM}/deploy-user")"
+          # Mask explicitly — unlike secrets.*, step outputs aren't auto-redacted in
+          # logs, and this repo is public: a tailnet IP is infra-identifying PII.
+          echo "::add-mask::${DEPLOY_HOST}"
+          echo "::add-mask::${DEPLOY_USER}"
+          echo "deploy_host=${DEPLOY_HOST}" >> "$GITHUB_OUTPUT"
+          echo "deploy_user=${DEPLOY_USER}" >> "$GITHUB_OUTPUT"
+
+      - name: Connect to tailnet
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ steps.secrets.outputs.deploy_host }}
+          DEPLOY_USER: ${{ steps.secrets.outputs.deploy_user }}
+        run: |
+          set -euo pipefail
+          install -m 600 -D /dev/null /tmp/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/deploy_key
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          TARGET="${DEPLOY_USER}@${DEPLOY_HOST}"
+          ssh -i /tmp/deploy_key "$TARGET" "mkdir -p ~/${APP}"
+          scp -i /tmp/deploy_key "docker/${APP}/docker-compose.yml" "${TARGET}:~/${APP}/docker-compose.yml"
+          scp -i /tmp/deploy_key /tmp/resolved.env "${TARGET}:~/${APP}/.env"
+          ssh -i /tmp/deploy_key "$TARGET" "cd ~/${APP} && docker compose pull && docker compose up -d"
+
+      - name: Clean up
+        if: always()
+        run: rm -f /tmp/resolved.env /tmp/deploy_key

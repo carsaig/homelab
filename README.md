@@ -14,10 +14,25 @@ Docker Compose stacks for my self-hosted homelab. One folder per application und
 docker/
   <app-name>/
     docker-compose.yml
-    .env.example       # variable names only, never real values
-    README.md          # only when the app has non-obvious setup/quirks
+    .env.op             # op:// references only — resolved to real values at deploy time
+    .env.example        # variable names only, for manual/local runs — never real values
+    README.md           # only when the app has non-obvious setup/quirks
 ```
 
-## Secrets
+## Secrets & deployment
 
-Every `.env` file is gitignored. `.env.example` documents required variable *names* only — never commit real values, credentials, or IPs. This repo is public.
+Real secret values never live in this repo or on the machine that clones it — only
+`op://` references (`.env.op`) and `${VAR}` placeholders (`docker-compose.yml`). This
+makes every app folder deployable from any machine, not just the one where a local
+`.env` happened to be created by hand.
+
+Deploying an app runs through [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+(manual trigger, pick the app): it resolves `.env.op` via the 1Password CLI, joins the
+tailnet as an ephemeral node, and pushes the compose file + resolved `.env` to the
+target host over SSH. The target host and SSH user for each app are themselves stored
+as 1Password fields (`deploy-host`, `deploy-user`) rather than in this file, since a
+tailnet address is infrastructure-identifying information this public repo shouldn't
+carry.
+
+`.env.example` still exists per app for anyone who wants to run a stack manually
+without the workflow — fill it in locally, never commit it (gitignored).
