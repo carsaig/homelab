@@ -9,8 +9,9 @@ services:
       COOLIFY_MCP_ELICITATION: ${COOLIFY_MCP_ELICITATION:-off}
     ports:
       - ${MCP_PROXY_PORTS:?MCP_PROXY_PORTS is required}
-    extra_hosts:
-      - ${COOLIFY_HOST_MAPPING:?COOLIFY_HOST_MAPPING is required}
+    networks:
+      - default
+      - coolify
     healthcheck:
       test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8080),2); s.close()"]
       interval: 30s
@@ -29,3 +30,7 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+
+networks:
+  coolify:
+    external: true
