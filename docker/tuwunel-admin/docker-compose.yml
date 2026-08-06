@@ -21,4 +21,4 @@ services:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}
+    name: ${PLATFORM_NETWORK}

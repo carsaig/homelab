@@ -23,13 +23,13 @@ services:
     environment:
       NODE_ENV: production
       DATA_DIR: /app/data
-      PORT: ${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}
-      DASHBOARD_PORT: ${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}
-      API_PORT: ${OMNIROUTE_API_PORT:?OMNIROUTE_API_PORT is required}
-      API_HOST: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
-      HOSTNAME: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
-      LIVE_WS_PORT: ${OMNIROUTE_LIVE_WS_PORT:?OMNIROUTE_LIVE_WS_PORT is required}
-      LIVE_WS_HOST: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
+      PORT: ${OMNIROUTE_PORT}
+      DASHBOARD_PORT: ${OMNIROUTE_PORT}
+      API_PORT: ${OMNIROUTE_API_PORT}
+      API_HOST: ${OMNIROUTE_BIND_ADDRESS}
+      HOSTNAME: ${OMNIROUTE_BIND_ADDRESS}
+      LIVE_WS_PORT: ${OMNIROUTE_LIVE_WS_PORT}
+      LIVE_WS_HOST: ${OMNIROUTE_BIND_ADDRESS}
       LIVE_WS_ALLOWED_ORIGINS: ${BASE_URL}
       LIVE_WS_ALLOWED_HOSTS: ${LIVE_WS_ALLOWED_HOSTS}
       NEXT_PUBLIC_LIVE_WS_PUBLIC_URL: ${LIVE_WS_PUBLIC_URL}
@@ -49,10 +49,10 @@ services:
       CLI_MODE: ${CLI_MODE:?CLI_MODE is required}
       CLI_EXTRA_PATHS: /host-local/bin:/host-npm-global/bin
       CLI_CONFIG_HOME: /host-home
-      CLI_ALLOW_CONFIG_WRITES: ${CLI_ALLOW_CONFIG_WRITES:?CLI_ALLOW_CONFIG_WRITES is required}
+      CLI_ALLOW_CONFIG_WRITES: ${CLI_ALLOW_CONFIG_WRITES}
     expose:
-      - "${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}"
-      - "${OMNIROUTE_LIVE_WS_PORT:?OMNIROUTE_LIVE_WS_PORT is required}"
+      - "${OMNIROUTE_PORT}"
+      - "${OMNIROUTE_LIVE_WS_PORT}"
     volumes:
       - omniroute-data:/app/data
       - type: bind
@@ -63,7 +63,7 @@ services:
         source: ${HOST_HOME_DIR}/.claude
         target: /host-home/.claude
       - type: bind
-        source: ${HOST_CLAUDE_BINARY_PATH:?HOST_CLAUDE_BINARY_PATH is required}
+        source: ${HOST_CLAUDE_BINARY_PATH}
         target: /host-local/bin/claude
         read_only: true
       # Preserve the installed CLI directory structure.
@@ -88,10 +88,10 @@ services:
 networks:
   omniroute-memory:
     external: true
-    name: ${MEMORY_NETWORK_NAME:?MEMORY_NETWORK_NAME is required}
+    name: ${MEMORY_NETWORK_NAME}
 
 volumes:
   omniroute-data:
-    name: ${OMNIROUTE_DATA_VOLUME:?OMNIROUTE_DATA_VOLUME is required}
+    name: ${OMNIROUTE_DATA_VOLUME}
   redis-data:
-    name: ${OMNIROUTE_REDIS_VOLUME:?OMNIROUTE_REDIS_VOLUME is required}
+    name: ${OMNIROUTE_REDIS_VOLUME}

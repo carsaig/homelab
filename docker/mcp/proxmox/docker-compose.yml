@@ -4,13 +4,13 @@ services:
     image: ghcr.io/carsaig/proxmox-mcp:0.5.10-1
     restart: unless-stopped
     environment:
-      PROXMOX_HOST: ${PROXMOX_HOST:?PROXMOX_HOST is required}
-      PROXMOX_PORT: ${PROXMOX_PORT:?PROXMOX_PORT is required}
-      PROXMOX_VERIFY_SSL: ${PROXMOX_VERIFY_SSL:?PROXMOX_VERIFY_SSL is required}
-      SECURITY_DEV_MODE: ${SECURITY_DEV_MODE:?SECURITY_DEV_MODE is required}
-      PROXMOX_TOKEN_ID: ${PROXMOX_TOKEN_ID:?PROXMOX_TOKEN_ID is required}
-      PROXMOX_TOKEN_SECRET: ${PROXMOX_TOKEN_SECRET:?PROXMOX_TOKEN_SECRET is required}
-      MCP_PROXY_BEARER_TOKEN: ${MCP_PROXY_BEARER_TOKEN:?MCP_PROXY_BEARER_TOKEN is required}
+      PROXMOX_HOST: ${PROXMOX_HOST}
+      PROXMOX_PORT: ${PROXMOX_PORT}
+      PROXMOX_VERIFY_SSL: ${PROXMOX_VERIFY_SSL}
+      SECURITY_DEV_MODE: ${SECURITY_DEV_MODE}
+      PROXMOX_TOKEN_ID: ${PROXMOX_TOKEN_ID}
+      PROXMOX_TOKEN_SECRET: ${PROXMOX_TOKEN_SECRET}
+      MCP_PROXY_BEARER_TOKEN: ${MCP_PROXY_BEARER_TOKEN}
     expose:
       - "8080"
     ports:
@@ -28,4 +28,4 @@ services:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}
+    name: ${PLATFORM_NETWORK}

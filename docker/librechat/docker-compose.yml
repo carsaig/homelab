@@ -24,7 +24,7 @@ services:
       - librechat_images:/app/client/public/images
       - librechat_logs:/app/api/logs
     labels:
-      - "${LIBRECHAT_MIDDLEWARE_LABEL:?LIBRECHAT_MIDDLEWARE_LABEL is required}"
+      - "${LIBRECHAT_MIDDLEWARE_LABEL}"
     networks:
       - default
       - platform
@@ -80,4 +80,4 @@ volumes:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}
+    name: ${PLATFORM_NETWORK}
