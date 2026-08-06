@@ -4,12 +4,12 @@ FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb836
 ARG COOLIFY_MCP_VERSION=2.19.3
 ARG MCP_PROXY_VERSION=0.12.0
 ARG MCP_SDK_VERSION=1.29.0
-ARG IMAGE_REV=2
+ARG IMAGE_REV=3
 
 LABEL org.opencontainers.image.source="https://github.com/carsaig/homelab" \
       org.opencontainers.image.version="${COOLIFY_MCP_VERSION}-${IMAGE_REV}"
 
-RUN apk add --no-cache python3 py3-pip \
+RUN apk add --no-cache python3 py3-pip libcap \
     && python3 -m venv /opt/mcp-proxy \
     && /opt/mcp-proxy/bin/pip install --no-cache-dir \
         "mcp==${MCP_SDK_VERSION}" \
@@ -18,6 +18,7 @@ RUN apk add --no-cache python3 py3-pip \
     && adduser -S -G app -h /home/app app
 
 COPY --from=caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d /usr/bin/caddy /usr/bin/caddy
+RUN setcap -r /usr/bin/caddy
 
 WORKDIR /app
 COPY package.json package-lock.json ./

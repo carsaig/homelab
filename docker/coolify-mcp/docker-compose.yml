@@ -1,6 +1,6 @@
 services:
   coolify-mcp:
-    image: ghcr.io/carsaig/coolify-mcp-gateway:2.19.3-2
+    image: ghcr.io/carsaig/coolify-mcp-gateway:2.19.3-3
     restart: unless-stopped
     environment:
       COOLIFY_BASE_URL: ${COOLIFY_BASE_URL:?COOLIFY_BASE_URL is required}
