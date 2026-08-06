@@ -1,0 +1,4 @@
+use_default_settings: true
+
+outgoing:
+  useragent_suffix: "CertainSearXNG/1.0 (+https://github.com/carsaig)"
