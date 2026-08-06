@@ -1,0 +1,323 @@
+services:
+  redis:
+    image: redis:8.10.0
+    container_name: PaperlessNGX-REDIS
+    labels:
+      wud.watch: "false"
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass redispass
+    hostname: paper-redis
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpu_shares: 768
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    user: ${USER_PID}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+    volumes:
+      - ${REDIS_VOLUME}
+    environment:
+      TZ: Europe/Berlin
+    restart: on-failure:5
+    networks:
+      - paperless
+
+  db:
+    image: postgres:18.4
+    labels:
+      wud.watch: "false"
+    container_name: PaperlessNGX-DB
+    hostname: paper-db
+    mem_limit: 1g
+    cpu_shares: 768
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "paperless", "-U", "paperlessuser"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    volumes:
+      - ${POSTGRES_DATA_PATH}
+      - ${POSTGRES_ENTRYPOINT}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: on-failure:5
+    networks:
+      - paperless
+
+  gotenberg:
+    image: gotenberg/gotenberg:latest
+    container_name: PaperlessNGX-GOTENBERG
+    hostname: PaperlessNGX-GOTENBERG
+    security_opt:
+      - no-new-privileges:true
+    user: ${USER_PID}
+    ports:
+      - ${PORTS_GOTENBERG}
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+      - "--log-level=debug"
+    restart: on-failure:5
+    networks:
+      - paperless
+
+  tika:
+    image: docker.io/apache/tika:4.0.0-beta-1-full
+    container_name: PaperlessNGX-TIKA
+    hostname: tika
+    security_opt:
+      - no-new-privileges:true
+    user: ${USER_PID}
+    restart: on-failure:5
+    networks:
+      - paperless
+
+  google-credentials-init:
+    image: 1password/op:2.38.2-beta.01
+    container_name: PaperlessNGX-op-credentials
+    environment:
+      OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN}
+    entrypoint: ["/bin/sh", "-c"]
+    user: "0:0"
+    command:
+      - >
+        op run --environment ${OP_PAPERLESS_GPT_ENV_ID} -- sh -c 'printf "%s" "$$GOOGLE_CREDENTIALS_JSON" > /creds/credentials.json' &&
+        chmod 644 /creds/credentials.json
+    volumes:
+      - google_docai_creds:/creds
+    restart: "no"
+    networks:
+      - paperless
+
+  paperless-gpt:
+    image: icereed/paperless-gpt:latest
+    container_name: PaperlessNGX-GPT
+    hostname: PaperlessNGX-GPT
+    environment:
+      PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN}
+      PAPERLESS_PUBLIC_URL: ${PAPERLESS_URL}
+      MANUAL_TAG: 'paperless-gpt'          # Optional, default: paperless-gpt
+      AUTO_TAG: 'paperless-gpt-auto'       # Optional, default: paperless-gpt-auto
+      FAIL_TAG: "paperless-gpt-failed"
+
+      # LLM Configuration - Choose one:
+      # Option 1: Standard OpenAI
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_MODEL: ${LLM_MODEL}
+      OPENAI_API_KEY: ${LLM_GATEWAY_API_KEY}
+      OPENAI_BASE_URL: ${LLM_GATWAY_BASE_URL}
+
+      # Option 2: Mistral
+      # LLM_PROVIDER: "mistral"
+      # LLM_MODEL: "mistral-large-latest"
+      # MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+
+      # Option 3: Azure OpenAI
+      # LLM_PROVIDER: "openai"
+      # LLM_MODEL: "your-deployment-name"
+      # OPENAI_API_KEY: "your_azure_api_key"
+      # OPENAI_API_TYPE: "azure"
+      # OPENAI_BASE_URL: "https://your-resource.openai.azure.com"
+
+      # Option 3: Ollama (Local)
+      # LLM_PROVIDER: "ollama"
+      # LLM_MODEL: "phi:2.7b" #deepseek-r1:5b,phi:2.7b
+      # OLLAMA_HOST: "http://ollama:11434/api/chat" #http://host.docker.internal:11434
+      # TOKEN_LIMIT: 1000 # Recommended for smaller models
+      # API_ENDPOINT: "/api/chat"
+      # OPENAI_STREAM: false
+
+      # Optional LLM Settings
+      LLM_LANGUAGE: "German" # Optional, default: English
+
+      # OCR Configuration - Choose one:
+      # Option 1: LLM-based OCR
+      # OCR_PROVIDER: "llm" # Default OCR provider
+      # VISION_LLM_PROVIDER: "openai" # openai or ollama
+      # VISION_LLM_MODEL: "gemini/gemini-3-pro-image" # minicpm-v (ollama) or gpt-4v (openai)
+      #OLLAMA_HOST: 'http://host.docker.internal:11434' # If using Ollama
+
+      # OCR Processing Mode
+      OCR_PROCESS_MODE: "image" # Optional, default: image, other options: pdf, whole_pdf
+      PDF_SKIP_EXISTING_OCR: "false" # Optional, skip OCR for PDFs with existing OCR
+
+      # Option 2: Google Document AI
+      OCR_PROVIDER: 'google_docai'       # Use Google Document AI
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}  # Your GCP project ID
+      GOOGLE_LOCATION: 'eu'              # Document AI region
+      GOOGLE_PROCESSOR_ID: ${GOOGLE_PROCESSOR_ID} # Your processor ID
+      GOOGLE_APPLICATION_CREDENTIALS: '/creds/credentials.json' # Path to service account key
+
+      # Option 3: Azure Document Intelligence
+      # OCR_PROVIDER: 'azure'              # Use Azure Document Intelligence
+      # AZURE_DOCAI_ENDPOINT: 'your-endpoint' # Your Azure endpoint URL
+      # AZURE_DOCAI_KEY: 'your-key'        # Your Azure API key
+      # AZURE_DOCAI_MODEL_ID: 'prebuilt-read' # Optional, defaults to prebuilt-read
+      # AZURE_DOCAI_TIMEOUT_SECONDS: '120'  # Optional, defaults to 120 seconds
+      # AZURE_DOCAI_OUTPUT_CONTENT_FORMAT: 'text' # Optional, defaults to 'text', other valid option is 'markdown'
+              # 'markdown' requires the 'prebuilt-layout' model
+
+      # Enhanced OCR Features
+      CREATE_LOCAL_HOCR: "false" # Optional, save hOCR files locally
+      LOCAL_HOCR_PATH: "/app/hocr" # Optional, path for hOCR files
+      CREATE_LOCAL_PDF: "false" # Optional, save enhanced PDFs locally
+      LOCAL_PDF_PATH: "/app/pdf" # Optional, path for PDF files
+      PDF_UPLOAD: "false" # Optional, upload enhanced PDFs to paperless-ngx
+      PDF_REPLACE: "false" # Optional and DANGEROUS, delete original after upload
+      PDF_COPY_METADATA: "true" # Optional, copy metadata from original document
+      PDF_OCR_TAGGING: "true" # Optional, add tag to processed documents
+      PDF_OCR_COMPLETE_TAG: "paperless-gpt-ocr-complete" # Optional, tag name
+
+      # Option 4: Docling Server
+      # OCR_PROVIDER: 'docling'              # Use a Docling server
+      # DOCLING_URL: 'http://your-docling-server:port' # URL of your Docling instance
+
+      AUTO_OCR_TAG: 'paperless-gpt-ocr-auto' # Optional, default: paperless-gpt-ocr-auto
+      OCR_LIMIT_PAGES: '5'                 # Optional, default: 5. Set to 0 for no limit.
+      OCR_MAX_RETRIES: "3"
+      LOG_LEVEL: 'debug'                    # Optional: debug, warn, error
+    volumes:
+      - ${PAPERLESS_GPT_VOLUME}   # Mount the prompts directory
+      # For Google Document AI:
+      - google_docai_creds:/creds:ro
+      #- ${HOME}/.config/gcloud/application_default_credentials.json:/app/credentials.json
+      # For local hOCR and PDF saving:
+      #- ./hocr:/app/hocr # Only if CREATE_LOCAL_HOCR is true
+      #- ./pdf:/app/pdf # Only if CREATE_LOCAL_PDF is true
+    ports:
+      - '8082:8080'
+    depends_on:
+      paperless:
+        condition: service_started
+      google-credentials-init:
+        condition: service_completed_successfully
+    networks:
+      - paperless
+
+  paperless-ai:
+    image: clusterzx/paperless-ai
+    container_name: Paperless-AI
+    environment:
+      PUID: 1000
+      PGID: 1000
+      PAPERLESS_AI_PORT: ${PAPERLESS_AI_PORT}
+      RAG_SERVICE_URL: ${RAG_SERVICE_URL}
+      RAG_SERVICE_ENABLED: true
+    healthcheck:
+      test: timeout 10s bash -c ':> /dev/tcp/127.0.0.1/3000' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    volumes:
+      - ${PAPERLESS_AI_VOLUME}
+    ports:
+      - ${PORTS_PAPERLESS_AI}
+    restart: on-failure:5
+    networks:
+      - paperless
+
+  #toolbox:
+    #image: toolbox:latest
+    #container_name: toolbox
+    #restart: on-failure:5
+    #tty: true
+    #volumes:
+    #  - /volume1/docker/paperlessngx/pdf-repair:/data/pdf-repair
+    #  - /volume1/docker/paperlessngx/consume:/data/consume
+    #networks:
+    #  - paperless
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
+    container_name: PaperlessNGX
+    hostname: paperless-ngx
+    mem_limit: 6g
+    cpu_shares: 1024
+
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - ${PAPERLESS_PORTS}
+    volumes:
+      - ${VOLUME_PATH}/data:/usr/src/paperless/data:rw
+      - ${VOLUME_PATH}/media:/usr/src/paperless/media:rw
+      - ${VOLUME_PATH}/export:/usr/src/paperless/export:rw
+      - ${VOLUME_PATH}/trash:/usr/src/paperless/trash:rw
+      - /volume1/paperlessConsume:/usr/src/paperless/consume
+      - ${VOLUME_PATH}/scripts/push-notifications.sh:/usr/src/paperless/scripts/push-notifications.sh
+      - ${VOLUME_PATH}/scripts/post_consumption_scripts.sh:/usr/src/paperless/scripts/post_consumption_scripts.sh
+    environment:
+      PAPERLESS_REDIS: ${PAPERLESS_REDIS}
+      PAPERLESS_DBENGINE: ${PAPERLESS_DBENGINE}
+      PAPERLESS_DBHOST: ${PAPERLESS_DBHOST}
+      PAPERLESS_DBNAME: ${PAPERLESS_DBNAME}
+      PAPERLESS_DBUSER: ${PAPERLESS_DBUSER}
+      PAPERLESS_DBPASS: ${PAPERLESS_DBPASS}
+      PAPERLESS_TRASH_DIR: ../trash
+      PAPERLESS_FILENAME_FORMAT: '/unbearbeitet/{{ created_year }}/{{ correspondent }}/{{ document_type }}/{{ title }}'
+      PAPERLESS_FILENAME_FORMAT_REMOVE_NONE: true
+      PAPERLESS_OCR_ROTATE_PAGES_THRESHOLD: 6
+      PAPERLESS_OCR_ROTATE_PAGES: true
+      PAPERLESS_OCR_DESKEN: true
+      PAPERLESS_OCR_DPI: 300
+      PAPERLESS_OCR_IMAGE_DPI_WARNING_THRESHOLD: 2000
+      PAPERLESS_OCR_CLEAN: none
+      PAPERLESS_OCR_MODE: auto
+      #PAPERLESS_OCR_SKIP_ARCHIVE_FILE: with_text
+      PAPERLESS_ARCHIVE_FILE_GENERATION: auto
+      #entrypoint: >
+       # sh -c "pip install 'ocrmypdf==16.5.0' && /entrypoint.sh"
+      PAPERLESS_ENABLE_UPDATE_CHECK: true
+      PAPERLESS_CONSUMER_RECURSIVE: true
+      PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: true
+      PAPERLESS_CONSUMER_STABILITY_DELAY: 30
+      PAPERLESS_TASK_WORKERS: 1
+      USERMAP_UID: 1026
+      USERMAP_GID: 100
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_URL: ${PAPERLESS_URL}
+      PAPERLESS_CSRF_TRUSTED_ORIGINS: ${PAPERLESS_CSRF_TRUSTED_ORIGINS}
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_TIKA_ENABLED: 1
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: ${PAPERLESS_TIKA_GOTENBERG_ENDPOINT}
+      PAPERLESS_TIKA_ENDPOINT: ${PAPERLESS_TIKA_ENDPOINT}
+      PAPERLESS_POST_CONSUME_SCRIPT: ${PAPERLESS_POST_CONSUME_SCRIPT}
+      PAPERLESS_ALLOWED_HOSTS: ${PAPERLESS_ALLOWED_HOSTS}
+      PAPERLESS_CORS_ALLOWED_HOSTS: ${PAPERLESS_CORS_ALLOWED_HOSTS}
+      PAPERLESS_TRUSTED_PROXIES: ${PAPERLESS_TRUSTED_PROXIES}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+    restart: on-failure:5
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      tika:
+        condition: service_started
+      gotenberg:
+        condition: service_started
+    networks:
+      - paperless
+networks:
+  paperless:
+    external: true
+volumes:
+  google_docai_creds:
