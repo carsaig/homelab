@@ -8,8 +8,14 @@
 	}
 
 	@bearer header Authorization "Bearer {$MCP_PROXY_BEARER_TOKEN}"
+	@bifrost header X-MCP-Token "{$MCP_PROXY_BEARER_TOKEN}"
 
 	handle @bearer {
+		rewrite * /mcp
+		reverse_proxy dokploy-mcp:3000
+	}
+
+	handle @bifrost {
 		rewrite * /mcp
 		reverse_proxy dokploy-mcp:3000
 	}
