@@ -1,0 +1,7 @@
+{
+  "name": "homelab-coolify-mcp",
+  "private": true,
+  "dependencies": {
+    "@masonator/coolify-mcp": "2.19.3"
+  }
+}

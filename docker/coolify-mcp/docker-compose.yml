@@ -1,0 +1,29 @@
+services:
+  coolify-mcp:
+    image: ghcr.io/carsaig/coolify-mcp:2.19.3-1
+    restart: unless-stopped
+    environment:
+      COOLIFY_BASE_URL: ${COOLIFY_BASE_URL:?COOLIFY_BASE_URL is required}
+      COOLIFY_ACCESS_TOKEN: ${COOLIFY_ACCESS_TOKEN:?COOLIFY_ACCESS_TOKEN is required}
+      MCP_PROXY_BEARER_TOKEN: ${MCP_PROXY_BEARER_TOKEN:?MCP_PROXY_BEARER_TOKEN is required}
+      COOLIFY_MCP_ELICITATION: ${COOLIFY_MCP_ELICITATION:-off}
+    ports:
+      - ${MCP_PROXY_PORTS:?MCP_PROXY_PORTS is required}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8080),2); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M

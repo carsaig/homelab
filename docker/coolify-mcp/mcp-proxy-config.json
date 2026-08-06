@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "coolify": {
+      "command": "node",
+      "args": ["/app/node_modules/@masonator/coolify-mcp/dist/index.js"]
+    }
+  }
+}
