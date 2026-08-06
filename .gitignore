@@ -1,0 +1,9 @@
+# Never commit real secrets — .env.example documents variable names only,
+# Secret-provider mappings are maintained outside the public repository.
+**/.env
+**/.env.*
+!**/.env.example
+**/secrets/
+
+# macOS
+.DS_Store

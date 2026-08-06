@@ -1,0 +1,24 @@
+services:
+  tuwunel-admin:
+    build:
+      context: .
+      args:
+        TA_VERSION: "0.1.0"
+    image: tuwunel-admin:0.1.0
+    container_name: tuwunel-admin
+    environment:
+      - MATRIX_HOMESERVER=${MATRIX_HOMESERVER}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8009/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - platform
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

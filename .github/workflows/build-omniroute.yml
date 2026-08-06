@@ -1,0 +1,540 @@
+name: Build omniroute image
+
+# Builds and publishes ghcr.io/<owner>/omniroute for linux/arm64 only, straight
+# from OmniRoute's own upstream repo (no Dockerfile lives in this repo — the
+# git ref below is the single source of truth for which release gets built).
+# Native arm64 runner — no QEMU/multi-arch. Bump OMNIROUTE_REF below and push
+# to re-trigger a build for a new release.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-omniroute.yml"
+
+env:
+  OMNIROUTE_REF: release/v3.8.49
+
+concurrency:
+  group: build-omniroute
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Runner specs
+        run: |
+          echo "--- CPU ---"; nproc
+          echo "--- Memory ---"; free -h
+          echo "--- Disk ---"; df -h /
+
+      - name: Increase swap space
+        # Standard runner has 15GB RAM / 3GB swap — not enough for this app's
+        # Next.js/Turbopack production build, which OOMs with "cannot allocate
+        # memory" around 6 minutes in. 109GB of free disk sits unused, so add
+        # swap from there instead of needing a paid larger-runner tier.
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version tag from OMNIROUTE_REF
+        id: version
+        run: |
+          set -euo pipefail
+          echo "version=${OMNIROUTE_REF#release/}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout OmniRoute source
+        # Needed (instead of handing buildx a remote git URL as context) so we
+        # can patch the file below before building.
+        uses: actions/checkout@v4
+        with:
+          repository: diegosouzapw/OmniRoute
+          ref: ${{ env.OMNIROUTE_REF }}
+          path: omniroute-src
+
+      - name: Patch CLIProxyAPI installer's arm64 asset name (arm64 -> aarch64)
+        # OmniRoute's installer builds the GitHub release asset filename from
+        # Node's process.arch ("arm64"), but router-for-me/CLIProxyAPI publishes
+        # its Linux ARM64 asset as "..._linux_aarch64.tar.gz" - the exact-string
+        # match never succeeds, so CLIProxyAPI can never install on arm64 hosts
+        # even though a real aarch64 build exists upstream.
+        run: |
+          set -euo pipefail
+          FILE="omniroute-src/src/lib/versionManager/binaryManager.ts"
+          MATCHES=$(grep -c '\${arch}\${ext}' "$FILE")
+          if [ "$MATCHES" -ne 1 ]; then
+            echo "Expected exactly 1 match of \${arch}\${ext} in $FILE, found $MATCHES - upstream source changed, aborting patch." >&2
+            exit 1
+          fi
+          perl -i -pe 's/\$\{arch\}\$\{ext\}/\$\{arch === "arm64" ? "aarch64" : arch\}\$\{ext\}/' "$FILE"
+          grep -n 'aarch64' "$FILE"
+
+      - name: Wire Memory rerank card to real rerank provider registry
+        # Bug: the Memory dashboard's reranker picker (RerankConfigCard) was
+        # fed the SAME `providers` state as the embedding-model picker, so it
+        # listed embedding models instead of actual reranker/cross-encoder
+        # models (Cohere Rerank v4, etc.) even though a proper rerank
+        # registry (open-sse/config/rerankRegistry.ts, RERANK_PROVIDERS)
+        # already exists in the codebase - it was just never fetched into
+        # this screen. Fix: add a rerank-specific listing function + API
+        # route (mirroring the existing embedding-providers ones) and give
+        # EngineTab.tsx its own rerankProviders state to feed the card.
+        run: |
+          set -euo pipefail
+
+          mkdir -p omniroute-src/src/lib/memory/rerank
+          cat > omniroute-src/src/lib/memory/rerank/index.ts << 'EOF'
+          import { RERANK_PROVIDERS } from "@omniroute/open-sse/config/rerankRegistry.ts";
+          import { getProviderCredentials } from "@/sse/services/auth";
+          import type { EmbeddingProviderListing } from "@/lib/memory/embedding/types";
+
+          /**
+           * List providers that support reranking, marking which ones have a
+           * configured API key. Mirrors listEmbeddingProviders() but reads from
+           * RERANK_PROVIDERS instead of EMBEDDING_PROVIDERS, and skips the
+           * "dynamic local providers" half entirely since rerank has no
+           * local-provider concept.
+           */
+          export async function listRerankProviders(): Promise<EmbeddingProviderListing[]> {
+            const result: EmbeddingProviderListing[] = [];
+
+            for (const [providerId, config] of Object.entries(RERANK_PROVIDERS)) {
+              let hasKey = false;
+              try {
+                const creds = await getProviderCredentials(providerId);
+                hasKey = !!(
+                  creds &&
+                  !("allRateLimited" in creds && creds.allRateLimited) &&
+                  (("apiKey" in creds ? !!creds.apiKey : false) ||
+                    ("accessToken" in creds ? !!creds.accessToken : false))
+                );
+              } catch {
+                hasKey = false;
+              }
+
+              result.push({
+                provider: providerId,
+                hasKey,
+                models: config.models.map((m) => ({
+                  id: `${providerId}/${m.id}`,
+                  name: m.name,
+                  dimensions: null,
+                })),
+              });
+            }
+
+            return result;
+          }
+          EOF
+
+          mkdir -p omniroute-src/src/app/api/memory/rerank-providers
+          cat > omniroute-src/src/app/api/memory/rerank-providers/route.ts << 'EOF'
+          import { NextResponse } from "next/server";
+          import { isAuthenticated } from "@/shared/utils/apiAuth";
+          import { listRerankProviders } from "@/lib/memory/rerank";
+          import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+
+          export async function GET(request: Request) {
+            if (!(await isAuthenticated(request))) {
+              return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+
+            try {
+              const providers = await listRerankProviders();
+              return NextResponse.json({ providers });
+            } catch (err: unknown) {
+              const message = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
+              return NextResponse.json({ error: { message } }, { status: 500 });
+            }
+          }
+          EOF
+
+          cat > /tmp/patch-engine-tab.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const path = "omniroute-src/src/app/(dashboard)/dashboard/memory/components/tabs/EngineTab.tsx";
+          let content = readFileSync(path, "utf8");
+
+          function assertOneMatch(label, anchor) {
+            const count = content.split(anchor).length - 1;
+            if (count !== 1) {
+              console.error(
+                `Expected exactly 1 match of ${label} in ${path}, found ${count} - upstream source changed, aborting patch.`
+              );
+              process.exit(1);
+            }
+          }
+
+          const stateAnchor =
+            '  const [providers, setProviders] = useState<EmbeddingProviderListing[]>([]);\n' +
+            '  const [saving, setSaving] = useState(false);';
+          assertOneMatch("providers/saving state declaration", stateAnchor);
+          const stateReplacement =
+            '  const [providers, setProviders] = useState<EmbeddingProviderListing[]>([]);\n' +
+            '  const [rerankProviders, setRerankProviders] = useState<EmbeddingProviderListing[]>([]);\n' +
+            '  const [saving, setSaving] = useState(false);';
+          content = content.replace(stateAnchor, stateReplacement);
+
+          const effectAnchor =
+            '  useEffect(() => {\n' +
+            '    if (settingsLoading) return;\n' +
+            '    let cancelled = false;\n' +
+            '    fetch("/api/memory/embedding-providers")\n' +
+            '      .then((r) => (r.ok ? r.json() : null))\n' +
+            '      .then((data) => {\n' +
+            '        if (!cancelled && data?.providers) setProviders(data.providers);\n' +
+            '      })\n' +
+            '      .catch(() => {});\n' +
+            '    return () => {\n' +
+            '      cancelled = true;\n' +
+            '    };\n' +
+            '  }, [settingsLoading]);';
+          assertOneMatch("embedding-providers useEffect", effectAnchor);
+          const effectReplacement =
+            effectAnchor +
+            '\n\n' +
+            '  useEffect(() => {\n' +
+            '    if (settingsLoading) return;\n' +
+            '    let cancelled = false;\n' +
+            '    fetch("/api/memory/rerank-providers")\n' +
+            '      .then((r) => (r.ok ? r.json() : null))\n' +
+            '      .then((data) => {\n' +
+            '        if (!cancelled && data?.providers) setRerankProviders(data.providers);\n' +
+            '      })\n' +
+            '      .catch(() => {});\n' +
+            '    return () => {\n' +
+            '      cancelled = true;\n' +
+            '    };\n' +
+            '  }, [settingsLoading]);';
+          content = content.replace(effectAnchor, effectReplacement);
+
+          const rerankCardAnchor =
+            '            <RerankConfigCard\n' +
+            '              settings={settings}\n' +
+            '              providers={providers}\n' +
+            '              onSave={handleSaveSettings}\n' +
+            '              saving={saving}\n' +
+            '            />';
+          assertOneMatch("RerankConfigCard providers prop", rerankCardAnchor);
+          const rerankCardReplacement =
+            '            <RerankConfigCard\n' +
+            '              settings={settings}\n' +
+            '              providers={rerankProviders}\n' +
+            '              onSave={handleSaveSettings}\n' +
+            '              saving={saving}\n' +
+            '            />';
+          content = content.replace(rerankCardAnchor, rerankCardReplacement);
+
+          writeFileSync(path, content);
+          console.log("EngineTab.tsx patched: rerankProviders state, fetch effect, and RerankConfigCard prop wired up.");
+          NODEEOF
+
+          node /tmp/patch-engine-tab.mjs
+
+          echo "--- Verifying patched files ---"
+          test -f omniroute-src/src/lib/memory/rerank/index.ts
+          test -f omniroute-src/src/app/api/memory/rerank-providers/route.ts
+          grep -n 'rerankProviders' "omniroute-src/src/app/(dashboard)/dashboard/memory/components/tabs/EngineTab.tsx"
+          grep -c 'RerankConfigCard' "omniroute-src/src/app/(dashboard)/dashboard/memory/components/tabs/EngineTab.tsx"
+
+      - name: Patch combo-test per-target timeout (20000ms -> 8000ms)
+        # /api/combos/test tests every target in a combo in parallel and waits up
+        # to 20s per target before giving up. A single MCP tool call that chains
+        # a few of these sequentially (e.g. testing 3 combos back to back) can
+        # legitimately exceed 30s and trip a calling client's own tool-call
+        # timeout, even though nothing crashed or disconnected. The test payload
+        # is always a trivial one-liner (buildComboTestRequestBody), so a healthy
+        # provider should answer in a few seconds regardless - 8s is still
+        # generous headroom for that, while failing unhealthy targets faster.
+        run: |
+          set -euo pipefail
+          FILE="omniroute-src/src/app/api/combos/test/route.ts"
+          MATCHES=$(grep -c 'controller.abort(), 20000' "$FILE")
+          if [ "$MATCHES" -ne 1 ]; then
+            echo "Expected exactly 1 match of 'controller.abort(), 20000' in $FILE, found $MATCHES - upstream source changed, aborting patch." >&2
+            exit 1
+          fi
+          perl -i -pe 's/controller\.abort\(\), 20000\)/controller.abort(), 8000)/' "$FILE"
+          grep -n 'controller.abort(), 8000' "$FILE"
+
+      - name: Fix custom OpenAI-compatible provider names showing raw internal ID
+        # Bug: getProviderDisplayName(providerId, providerNode) resolves
+        # node.name -> node.prefix -> de-UUIDed fallback (src/lib/display/names.ts),
+        # and ~10 dashboard views wire it up correctly via useProviderNodeMap()/
+        # resolveProviderName() (Cost Overview, Route Explainability, Combo
+        # Health, Compression Analytics, Provider Utilization, the circuit-breaker
+        # Health page). Four call sites across two files never got that wiring
+        # (the helper was introduced later per upstream #8326 and not retrofitted
+        # everywhere):
+        #   - ProviderHealthMatrixCard.tsx and ComboControlCenterClient.tsx call
+        #     getProviderDisplayName(providerId) with NO second argument at all,
+        #     so it always falls straight past the node-name/prefix priority to
+        #     the raw-id fallback.
+        #   - EndpointPageClient.tsx passes only the static AI_PROVIDERS/
+        #     getProviderByAlias catalog (built-ins only), never the dynamic
+        #     provider_nodes map, so a custom connection is never found there
+        #     either.
+        # Symptom: a custom openai-compatible provider (e.g. named "Example Provider" in
+        # its connection config) shows its raw internal id
+        # ("openai-compatible-chat-<uuid>") instead of its display name on these three
+        # views specifically, while every other analytics/health view shows it
+        # correctly. NOT a bug: builderOptions.ts:710 also calls
+        # getProviderDisplayName(providerId, null) but that branch only ever
+        # runs for built-in NOAUTH_PROVIDERS, which by definition have no
+        # provider_nodes row — null is the correct argument there, left alone.
+        # Fix: wire useProviderNodeMap()/resolveProviderName() into all four
+        # broken call sites, mirroring the exact pattern already used by the
+        # working views (see health/page.tsx's `nodeMap.get(provider) ??
+        # providerInfo` for the EndpointPageClient.tsx fallback shape).
+        #
+        # NOTE for future upstream diffing: re-check this patch against upstream
+        # release notes whenever OMNIROUTE_REF bumps — if upstream fixes #8326
+        # fully (retrofits the helper into every remaining call site), this
+        # entire step becomes a no-op-or-conflict and should be deleted.
+        run: |
+          set -euo pipefail
+          cat > /tmp/patch-provider-display-names.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          function assertOneMatch(path, label, content, anchor) {
+            const count = content.split(anchor).length - 1;
+            if (count !== 1) {
+              console.error(
+                `Expected exactly 1 match of ${label} in ${path}, found ${count} - upstream source changed, aborting patch.`
+              );
+              process.exit(1);
+            }
+          }
+
+          // --- 1. ProviderHealthMatrixCard.tsx ---
+          {
+            const path =
+              "omniroute-src/src/app/(dashboard)/dashboard/health/ProviderHealthMatrixCard.tsx";
+            let content = readFileSync(path, "utf8");
+
+            const importAnchor = 'import { getProviderDisplayName } from "@/lib/display/names";';
+            assertOneMatch(path, "getProviderDisplayName import", content, importAnchor);
+            content = content.replace(
+              importAnchor,
+              'import { useProviderNodeMap, resolveProviderName } from "@/lib/display/useProviderNodeMap";'
+            );
+
+            const fnAnchor = "export default function ProviderHealthMatrixCard() {";
+            assertOneMatch(path, "component signature", content, fnAnchor);
+            content = content.replace(fnAnchor, `${fnAnchor}\n  const nodeMap = useProviderNodeMap();`);
+
+            const callAnchor = "{getProviderDisplayName(provider.provider)}";
+            assertOneMatch(path, "provider display-name call", content, callAnchor);
+            content = content.replace(
+              callAnchor,
+              "{resolveProviderName(provider.provider, nodeMap)}"
+            );
+
+            writeFileSync(path, content);
+            console.log("Patched ProviderHealthMatrixCard.tsx");
+          }
+
+          // --- 2. ComboControlCenterClient.tsx ---
+          {
+            const path =
+              "omniroute-src/src/app/(dashboard)/dashboard/combos/ComboControlCenterClient.tsx";
+            let content = readFileSync(path, "utf8");
+
+            const importAnchor = 'import { getProviderDisplayName } from "@/lib/display/names";';
+            assertOneMatch(path, "getProviderDisplayName import", content, importAnchor);
+            content = content.replace(
+              importAnchor,
+              'import { useProviderNodeMap, resolveProviderName } from "@/lib/display/useProviderNodeMap";'
+            );
+
+            const rowAnchor =
+              'function TargetConfiguredRow({ target }: { target: ComboControlCenterTarget }) {\n' +
+              '  const t = useTranslations("comboControl");';
+            assertOneMatch(path, "TargetConfiguredRow signature", content, rowAnchor);
+            content = content.replace(rowAnchor, rowAnchor + '\n  const nodeMap = useProviderNodeMap();');
+
+            const rowCallAnchor =
+              '{target.provider ? getProviderDisplayName(target.provider) : t("comboReference")} ·{" "}';
+            assertOneMatch(path, "TargetConfiguredRow display-name call", content, rowCallAnchor);
+            content = content.replace(
+              rowCallAnchor,
+              '{target.provider ? resolveProviderName(target.provider, nodeMap) : t("comboReference")} ·{" "}'
+            );
+
+            const resolvedRowAnchor =
+              'function ResolvedTargetRow({ target }: { target: ComboControlCenterTargetHealth }) {\n' +
+              '  const t = useTranslations("comboControl");';
+            assertOneMatch(path, "ResolvedTargetRow signature", content, resolvedRowAnchor);
+            content = content.replace(
+              resolvedRowAnchor,
+              resolvedRowAnchor + '\n  const nodeMap = useProviderNodeMap();'
+            );
+
+            const resolvedRowCallAnchor =
+              '{target.provider ? getProviderDisplayName(target.provider) : t("unknownProvider")} ·{" "}';
+            assertOneMatch(path, "ResolvedTargetRow display-name call", content, resolvedRowCallAnchor);
+            content = content.replace(
+              resolvedRowCallAnchor,
+              '{target.provider ? resolveProviderName(target.provider, nodeMap) : t("unknownProvider")} ·{" "}'
+            );
+
+            const mainFnAnchor =
+              'export default function ComboControlCenterClient({ comboId }: { comboId: string }) {';
+            assertOneMatch(path, "main component signature", content, mainFnAnchor);
+            content = content.replace(mainFnAnchor, mainFnAnchor + '\n  const nodeMap = useProviderNodeMap();');
+
+            const quotaCallAnchor = "{getProviderDisplayName(provider.provider)}";
+            assertOneMatch(path, "quota distribution display-name call", content, quotaCallAnchor);
+            content = content.replace(
+              quotaCallAnchor,
+              "{resolveProviderName(provider.provider, nodeMap)}"
+            );
+
+            writeFileSync(path, content);
+            console.log("Patched ComboControlCenterClient.tsx");
+          }
+
+          // --- 3. EndpointPageClient.tsx ---
+          {
+            const path = "omniroute-src/src/app/(dashboard)/dashboard/endpoint/EndpointPageClient.tsx";
+            let content = readFileSync(path, "utf8");
+
+            const importAnchor = 'import { getProviderDisplayName } from "@/lib/display/names";';
+            assertOneMatch(path, "getProviderDisplayName import", content, importAnchor);
+            content = content.replace(
+              importAnchor,
+              importAnchor + '\nimport { useProviderNodeMap } from "@/lib/display/useProviderNodeMap";'
+            );
+
+            const fnAnchor =
+              '  const t = useTranslations("endpoint");\n  const grouped = useMemo(() => {';
+            assertOneMatch(path, "EndpointSection body start", content, fnAnchor);
+            content = content.replace(
+              fnAnchor,
+              '  const t = useTranslations("endpoint");\n  const nodeMap = useProviderNodeMap();\n  const grouped = useMemo(() => {'
+            );
+
+            const nameAnchor =
+              '  const providerName = (id) => getProviderDisplayName(id, resolveProvider(id));';
+            assertOneMatch(path, "providerName resolver", content, nameAnchor);
+            content = content.replace(
+              nameAnchor,
+              '  const providerName = (id) => getProviderDisplayName(id, nodeMap.get(id) ?? resolveProvider(id));'
+            );
+
+            writeFileSync(path, content);
+            console.log("Patched EndpointPageClient.tsx");
+          }
+          NODEEOF
+
+          node /tmp/patch-provider-display-names.mjs
+
+          echo "--- Verifying patched files ---"
+          grep -n 'resolveProviderName\|useProviderNodeMap' "omniroute-src/src/app/(dashboard)/dashboard/health/ProviderHealthMatrixCard.tsx"
+          grep -n 'resolveProviderName\|useProviderNodeMap' "omniroute-src/src/app/(dashboard)/dashboard/combos/ComboControlCenterClient.tsx"
+          grep -n 'useProviderNodeMap\|nodeMap.get' "omniroute-src/src/app/(dashboard)/dashboard/endpoint/EndpointPageClient.tsx"
+
+      - name: Resolve provider prefix in Combo Health's per-model usage-skew cards
+        # Follow-up to the previous step, found by the user after that fix went
+        # live: ComboHealthTab.tsx's "usage skew" section (ComboHealthCard,
+        # sortedDistribution.map) renders `entry.model` directly - a fully
+        # qualified routing string like "provider-id/example-model" with no
+        # attempt to resolve the provider
+        # prefix at all (unlike the rest of this same file, which already calls
+        # resolveProviderName() in 3 other places - ComboForecastPanel,
+        # ComboScoringInspectorPanel, ComboHealthCard itself all already have
+        # `const nodeMap = useProviderNodeMap();` in scope, just never applied
+        # it to this one render). Fix: split the qualified string on its first
+        # "/", resolve only the prefix segment through resolveProviderName(),
+        # rejoin with the model-id segment untouched. Built-in short aliases
+        # ("provider", "alias", ...) have no provider_nodes row either, so
+        # getProviderDisplayName's own last-resort fallback returns them
+        # unchanged - this patch is a no-op for them and only changes the
+        # long custom-connection-uuid prefixes.
+        run: |
+          set -euo pipefail
+          cat > /tmp/patch-combo-health-model-labels.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          function assertOneMatch(path, label, content, anchor) {
+            const count = content.split(anchor).length - 1;
+            if (count !== 1) {
+              console.error(
+                `Expected exactly 1 match of ${label} in ${path}, found ${count} - upstream source changed, aborting patch.`
+              );
+              process.exit(1);
+            }
+          }
+
+          const path = "omniroute-src/src/app/(dashboard)/dashboard/analytics/ComboHealthTab.tsx";
+          let content = readFileSync(path, "utf8");
+
+          const helperAnchor =
+            'function formatCompactNumber(value: number) {\n' +
+            '  return value.toLocaleString(undefined, { maximumFractionDigits: 0 });\n' +
+            '}';
+          assertOneMatch(path, "formatCompactNumber helper", content, helperAnchor);
+          const helperReplacement =
+            helperAnchor +
+            '\n\n' +
+            'function formatQualifiedModel(\n' +
+            '  qualifiedModel: string,\n' +
+            '  nodeMap: ReturnType<typeof useProviderNodeMap>\n' +
+            '): string {\n' +
+            '  const slashIndex = qualifiedModel.indexOf("/");\n' +
+            '  if (slashIndex === -1) return qualifiedModel;\n' +
+            '  const prefix = qualifiedModel.slice(0, slashIndex);\n' +
+            '  const rest = qualifiedModel.slice(slashIndex + 1);\n' +
+            '  return `${resolveProviderName(prefix, nodeMap)}/${rest}`;\n' +
+            '}';
+          content = content.replace(helperAnchor, helperReplacement);
+
+          const callAnchor =
+            '<div className="truncate text-sm font-medium text-text-main">{entry.model}</div>';
+          assertOneMatch(path, "usage-skew model label", content, callAnchor);
+          content = content.replace(
+            callAnchor,
+            '<div className="truncate text-sm font-medium text-text-main">{formatQualifiedModel(entry.model, nodeMap)}</div>'
+          );
+
+          writeFileSync(path, content);
+          console.log("Patched ComboHealthTab.tsx");
+          NODEEOF
+
+          node /tmp/patch-combo-health-model-labels.mjs
+
+          echo "--- Verifying patched file ---"
+          grep -n 'formatQualifiedModel' "omniroute-src/src/app/(dashboard)/dashboard/analytics/ComboHealthTab.tsx"
+
+      - name: Build and push (linux/arm64 only)
+        uses: docker/build-push-action@v6
+        with:
+          context: omniroute-src
+          target: runner-base
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/omniroute:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/omniroute:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

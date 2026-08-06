@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codemunch": {
+      "command": "python",
+      "args": ["/app/codemunch_gateway.py"]
+    },
+    "codemunch-core": {
+      "command": "jcodemunch-mcp",
+      "args": ["serve"]
+    }
+  }
+}

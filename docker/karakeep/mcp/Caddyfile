@@ -1,0 +1,16 @@
+{
+	auto_https off
+}
+
+:8080 {
+	@bearer header Authorization "Bearer {$MCP_PROXY_BEARER_TOKEN}"
+
+	handle @bearer {
+		rewrite * /servers/karakeep/mcp
+		reverse_proxy localhost:9090
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}

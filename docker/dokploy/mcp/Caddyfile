@@ -1,0 +1,20 @@
+{
+	auto_https off
+}
+
+:8080 {
+	handle /health {
+		respond 200
+	}
+
+	@bearer header Authorization "Bearer {$MCP_PROXY_BEARER_TOKEN}"
+
+	handle @bearer {
+		rewrite * /mcp
+		reverse_proxy dokploy-mcp:3000
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}

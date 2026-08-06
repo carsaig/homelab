@@ -1,0 +1,83 @@
+services:
+  api:
+    image: ghcr.io/danny-avila/librechat:v0.8.7
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    extra_hosts:
+      - ${DOCKER_HOST}
+      - ${OIDC_HOST}
+    env_file:
+      - .env
+    environment:
+      - HOST=${HOST}
+      - PORT=${HOST_PORT}
+      - MONGO_URI=${MONGO_URI}
+      - REDIS_URL=${REDIS_URL}
+      - RAG_API_URL=${RAG_API_URL}
+    entrypoint: ["/bin/sh", "/patches/entrypoint-patch.sh"]
+    command: ["npm", "run", "backend"]
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml:ro
+      - ./entrypoint-patch.sh:/patches/entrypoint-patch.sh:ro
+      - librechat_images:/app/client/public/images
+      - librechat_logs:/app/api/logs
+    labels:
+      - "${LIBRECHAT_MIDDLEWARE_LABEL:?LIBRECHAT_MIDDLEWARE_LABEL is required}"
+    networks:
+      - default
+      - platform
+
+  mongodb:
+    image: mongo:7.0
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+
+  rag-api:
+    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    restart: always
+    depends_on:
+      - vectordb
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - RAG_PORT=${RAG_PORT}
+      - COLLECTION_NAME=librechat
+      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER}
+      - EMBEDDINGS_MODEL=${EMBEDDINGS_MODEL}
+      - RAG_OPENAI_BASEURL=${LLM_GATEWAY_BASEURL}
+      - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY}
+      - CHUNK_SIZE=1500
+      - CHUNK_OVERLAP=100
+
+  vectordb:
+    image: pgvector/pgvector:0.8.0-pg17
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+volumes:
+  mongodb_data:
+  librechat_images:
+  librechat_logs:
+  pgvector_data:
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

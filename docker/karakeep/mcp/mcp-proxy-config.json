@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "karakeep": {
+      "command": "karakeep-mcp"
+    }
+  }
+}

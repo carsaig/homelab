@@ -1,0 +1,21 @@
+{
+	auto_https off
+}
+
+# Clean-URL bearer gate (karakeep pattern). Whatever path Traefik forwards for
+# mcp.<your-domain>/codemunch, Caddy rewrites it to the gateway's single MCP path.
+# Only the merged `codemunch` gateway is exposed; `codemunch-core` stays
+# internal (loopback-only, reached by the gateway). One external endpoint:
+#   mcp.<your-domain>/codemunch  ->  Traefik -> Caddy:8080 -> mcp-proxy codemunch
+:8080 {
+	@bearer header Authorization "Bearer {$CODEMUNCH_BEARER_TOKEN}"
+
+	handle @bearer {
+		rewrite * /servers/codemunch/mcp
+		reverse_proxy 127.0.0.1:9090
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}

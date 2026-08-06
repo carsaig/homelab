@@ -1,0 +1,42 @@
+services:
+  neo4j:
+      image: neo4j:5-community
+      container_name: neo4j
+      ports:
+        - ${HOST_PORT1}
+        - ${HOST_PORT2}
+      environment:
+        - NEO4J_AUTH=${NEO4J_AUTH}
+        - NEO4J_server_memory_heap_initial__size=512m
+        - NEO4J_server_memory_heap_max__size=1G
+      volumes:
+        - neo4j-data:/data
+        - neo4j-logs:/logs
+      deploy:
+        resources:
+          limits:
+            memory: 2G
+          reservations:
+            memory: 512M
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+        start_period: 60s
+      networks:
+        - platform
+
+volumes:
+  neo4j-data:
+    external: true
+    name: ${NEO4J_DATA_VOLUME:?NEO4J_DATA_VOLUME is required}
+  neo4j-logs:
+    external: true
+    name: ${NEO4J_LOGS_VOLUME:?NEO4J_LOGS_VOLUME is required}
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

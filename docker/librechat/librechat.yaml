@@ -1,0 +1,58 @@
+version: "1.3.6"
+cache: true
+
+registration:
+  socialLogins:
+    - google
+    - openid
+
+endpoints:
+  custom:
+    - name: ${LLM_GATEWAY_NAME}
+      apiKey: ${LLM_GATEWAY_API_KEY}
+      baseURL: ${LLM_GATEWAY_BASEURL}
+      models:
+        default:
+          - ${LLM_MODEL}
+        fetch: true
+      titleConvo: true
+      titleModel: ${LLM_MODEL}
+      modelDisplayLabel: ${MODEL_DISPLAY_LABEL}
+
+memory:
+  disabled: false
+  personalize: true
+  tokenLimit: 4000
+  messageWindowSize: 8
+  validKeys:
+    - preferences
+    - facts
+    - projects
+    - people
+    - decisions
+    - corrections
+    - context
+  instructions: |
+    You are a memory extraction agent. Analyze the conversation and extract information worth remembering.
+    Be PROACTIVE — do not wait for the user to say "remember this". Extract automatically when you detect:
+    - User preferences, habits, or opinions
+    - Personal facts (name, role, location, expertise)
+    - People mentioned (colleagues, friends, contacts) and their roles
+    - Project names, goals, deadlines, or technical decisions
+    - Corrections the user makes (what was wrong, what is right)
+    - Important context that would help personalize future conversations
+    Store each fact as a concise key-value pair. Use the most specific key that fits.
+    If a fact updates an existing memory, overwrite it. If contradicted, delete the old entry.
+    When in doubt, store it — it is better to remember too much than too little.
+  agent:
+    provider: ${LLM_PROVIDER}
+    model: ${LLM_MODEL}
+
+mcpServers:
+  bifrost-mcp:
+    type: streamable-http
+    url: ${MCP_URL}
+    headers:
+      Authorization: "Basic ${LLM_GATEWAY_AUTH}"
+      x-api-key: "${LLM_GATEWAY_API_KEY}"
+    timeout: 120000

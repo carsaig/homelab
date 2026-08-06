@@ -1,0 +1,18 @@
+{
+	auto_https off
+}
+
+:8080 {
+	@bearer header Authorization "Bearer {$MCP_PROXY_BEARER_TOKEN}"
+
+	handle @bearer {
+		rewrite * /mcp
+		reverse_proxy 127.0.0.1:8000 {
+			header_up Host 127.0.0.1:8000
+		}
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}

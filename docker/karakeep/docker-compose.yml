@@ -1,0 +1,57 @@
+services:
+  web:
+    image: ${WEB_IMAGE}
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${KARAKEEP_DATA_PATH:?KARAKEEP_DATA_PATH is required}
+        target: /data
+        bind:
+          create_host_path: false
+    ports:
+      - ${PORTS}
+    environment:
+      MEILI_ADDR: http://meilisearch:7700
+      BROWSER_WEB_URL: http://chrome:9222
+      DATA_DIR: /data
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--output", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  chrome:
+    image: gcr.io/zenika-hub/alpine-chrome:123
+    restart: unless-stopped
+    command:
+      - ${CHROME_RUNTIME_ARG:?CHROME_RUNTIME_ARG is required}
+      - --disable-gpu
+      - --disable-dev-shm-usage
+      - --remote-debugging-address=0.0.0.0
+      - --remote-debugging-port=9222
+      - --hide-scrollbars
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9222/json/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.52.0
+    restart: unless-stopped
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:7700/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  meilisearch:
+    external: true
+    name: ${MEILI_VOLUME_NAME:?MEILI_VOLUME_NAME is required}

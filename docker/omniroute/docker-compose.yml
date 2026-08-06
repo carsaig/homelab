@@ -1,0 +1,97 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: omniroute-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  omniroute:
+    container_name: omniroute
+    image: ghcr.io/carsaig/omniroute:v3.8.49
+    restart: unless-stopped
+    stop_grace_period: 40s
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      PORT: ${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}
+      DASHBOARD_PORT: ${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}
+      API_PORT: ${OMNIROUTE_API_PORT:?OMNIROUTE_API_PORT is required}
+      API_HOST: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
+      HOSTNAME: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
+      LIVE_WS_PORT: ${OMNIROUTE_LIVE_WS_PORT:?OMNIROUTE_LIVE_WS_PORT is required}
+      LIVE_WS_HOST: ${OMNIROUTE_BIND_ADDRESS:?OMNIROUTE_BIND_ADDRESS is required}
+      LIVE_WS_ALLOWED_ORIGINS: ${BASE_URL}
+      LIVE_WS_ALLOWED_HOSTS: ${LIVE_WS_ALLOWED_HOSTS}
+      NEXT_PUBLIC_LIVE_WS_PUBLIC_URL: ${LIVE_WS_PUBLIC_URL}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+      BASE_URL: ${BASE_URL}
+      NEXT_PUBLIC_BASE_URL: ${BASE_URL}
+      AUTH_COOKIE_SECURE: "true"
+      REQUIRE_API_KEY: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      API_KEY_SECRET: ${API_KEY_SECRET}
+      STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY}
+      INITIAL_PASSWORD: ${INITIAL_PASSWORD}
+      BIFROST_ENABLED: "1"
+      BIFROST_BASE_URL: ${BIFROST_BASE_URL}
+      BIFROST_API_KEY: ${BIFROST_API_KEY}
+      OMNIROUTE_RELAY_BACKEND: auto
+      CLI_MODE: ${CLI_MODE:?CLI_MODE is required}
+      CLI_EXTRA_PATHS: /host-local/bin:/host-npm-global/bin
+      CLI_CONFIG_HOME: /host-home
+      CLI_ALLOW_CONFIG_WRITES: ${CLI_ALLOW_CONFIG_WRITES:?CLI_ALLOW_CONFIG_WRITES is required}
+    expose:
+      - "${OMNIROUTE_PORT:?OMNIROUTE_PORT is required}"
+      - "${OMNIROUTE_LIVE_WS_PORT:?OMNIROUTE_LIVE_WS_PORT is required}"
+    volumes:
+      - omniroute-data:/app/data
+      - type: bind
+        source: ${HOST_HOME_DIR}/.local/bin
+        target: /host-local/bin
+        read_only: true
+      - type: bind
+        source: ${HOST_HOME_DIR}/.claude
+        target: /host-home/.claude
+      - type: bind
+        source: ${HOST_CLAUDE_BINARY_PATH:?HOST_CLAUDE_BINARY_PATH is required}
+        target: /host-local/bin/claude
+        read_only: true
+      # Preserve the installed CLI directory structure.
+      - type: bind
+        source: ${HOST_HOME_DIR}/.npm-global
+        target: /host-npm-global
+        read_only: true
+      # Host-managed CLI configuration.
+      - type: bind
+        source: ${HOST_HOME_DIR}/.codex
+        target: /host-home/.codex
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - default
+      - omniroute-memory
+
+networks:
+  omniroute-memory:
+    external: true
+    name: ${MEMORY_NETWORK_NAME:?MEMORY_NETWORK_NAME is required}
+
+volumes:
+  omniroute-data:
+    name: ${OMNIROUTE_DATA_VOLUME:?OMNIROUTE_DATA_VOLUME is required}
+  redis-data:
+    name: ${OMNIROUTE_REDIS_VOLUME:?OMNIROUTE_REDIS_VOLUME is required}

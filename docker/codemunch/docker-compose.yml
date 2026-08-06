@@ -1,0 +1,38 @@
+services:
+  codemunch:
+    image: ghcr.io/carsaig/codemunch:1.108.193-r6
+    restart: unless-stopped
+    environment:
+      # Bearer token Caddy requires on every request (both MCP paths). Set the
+      # Supply the deployment value through the platform environment.
+      CODEMUNCH_BEARER_TOKEN: ${CODEMUNCH_BEARER_TOKEN}
+      # Raise codemunch's per-folder file cap (default ~2000) so large repos
+      # index fully. Embedding scales with this — progress + ETA are reported
+      # via repo_status. Override in Coolify env if a repo needs even more.
+      JCODEMUNCH_MAX_FOLDER_FILES: ${JCODEMUNCH_MAX_FOLDER_FILES:-20000}
+      JCODEMUNCH_MAX_INDEX_FILES: ${JCODEMUNCH_MAX_INDEX_FILES:-20000}
+      # Embedding provider. DEFAULT: local ONNX (offline, free, but 2-thread slow
+      # — ~3h for a 100k-symbol repo). To route embeddings through an
+      # OpenAI-compatible endpoint (e.g. Bifrost) — ~15min for the same repo —
+      # set these FOUR in Coolify env: point JCODEMUNCH_LOCAL_EMBED_MODEL at a
+      # nonexistent path (disables local so codemunch falls through to OpenAI),
+      # then set OPENAI_API_KEY (a Bifrost VK), OPENAI_BASE_URL, OPENAI_EMBED_MODEL.
+      JCODEMUNCH_LOCAL_EMBED_MODEL: ${JCODEMUNCH_LOCAL_EMBED_MODEL:-/opt/models/all-MiniLM-L6-v2}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-}
+    volumes:
+      # Single named volume holds the cloned repo, codemunch's index, and
+      # status.json. The baked ONNX model lives in the image (/opt), not here.
+      - codemunch-data:/data
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8080),2); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  codemunch-data:

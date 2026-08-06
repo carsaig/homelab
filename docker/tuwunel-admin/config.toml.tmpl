@@ -1,0 +1,20 @@
+# Rendered to config.toml at container start by entrypoint.sh (envsubst).
+# The real homeserver URL is injected from the MATRIX_HOMESERVER env var
+# (set in the deploy platform), never committed here.
+[server]
+bind = "0.0.0.0:8009"
+
+[matrix]
+# Homeserver base URL offered on the login page. Admin logs in interactively
+# with their own Matrix credentials — no admin secret is stored here.
+homeservers = ["${MATRIX_HOMESERVER}"]
+
+# Only the configured homeserver is accepted (no arbitrary URL input).
+allow_any_server = false
+
+# Auto-detect the admin bot and admin room alias (#admins:{server_name}).
+admin_bot = ""
+admin_room_alias = ""
+
+device_id = "tuwunel-admin"
+device_display_name = "tuwunel-admin"

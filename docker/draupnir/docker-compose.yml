@@ -1,0 +1,24 @@
+services:
+  draupnir:
+    build:
+      context: .
+    image: draupnir-wrapped:latest
+    container_name: draupnir
+    environment:
+      - DRAUPNIR_HOMESERVER=${DRAUPNIR_HOMESERVER}
+      - DRAUPNIR_ACCESS_TOKEN=${DRAUPNIR_ACCESS_TOKEN}
+      - DRAUPNIR_MANAGEMENT_ROOM=${DRAUPNIR_MANAGEMENT_ROOM}
+    volumes:
+      # Persistent bot state (dataPath in the rendered config points here).
+      - draupnir-data:/data/storage
+    restart: unless-stopped
+    networks:
+      - platform
+
+volumes:
+  draupnir-data:
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

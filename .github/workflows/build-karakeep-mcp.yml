@@ -1,0 +1,58 @@
+name: Build karakeep-mcp image
+
+# Builds and publishes ghcr.io/<owner>/karakeep-mcp for linux/arm64 only.
+# Native arm64 runner — no QEMU/buildx cross-emulation, no multi-arch manifest.
+# Version tag is read from the Dockerfile's KARAKEEP_MCP_VERSION ARG, so bumping
+# that one line is the only change needed to publish a new version.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docker/karakeep-mcp/**"
+      - ".github/workflows/build-karakeep-mcp.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-karakeep-mcp
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read pinned karakeep-mcp version
+        id: version
+        run: |
+          set -euo pipefail
+          version=$(grep -oP 'KARAKEEP_MCP_VERSION=\K[0-9][0-9.]*' docker/karakeep-mcp/Dockerfile)
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (linux/arm64 only)
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/karakeep-mcp
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/karakeep-mcp:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/karakeep-mcp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

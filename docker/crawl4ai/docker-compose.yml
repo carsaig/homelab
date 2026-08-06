@@ -1,0 +1,62 @@
+services:
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    container_name: crawl4ai
+    volumes:
+      - /dev/shm:/dev/shm
+      - crawl4ai-data:/home/appuser/.cache
+    environment:
+      - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    user: "appuser"
+    networks:
+      - platform
+
+  rag:
+    image: crawl4ai-rag:latest
+    container_name: crawl4ai-rag
+    pull_policy: never
+    ports:
+      - ${RAG_HOST_PORT}
+    volumes:
+      - /dev/shm:/dev/shm
+    environment:
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - OPENAI_API_KEY=${LLM_GATEWAY_API_KEY}
+      - OPENAI_BASE_URL=${LLM_GATEWAY_URL}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
+      - MODEL_CHOICE=${MODEL_CHOICE}
+      - TRANSPORT=sse
+      - HOST=${HOST_IP}
+      - PORT=${HOST_PORT}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - platform
+
+volumes:
+  crawl4ai-data:
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

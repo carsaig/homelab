@@ -1,0 +1,92 @@
+services:
+  qdrant-mcp:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      QDRANT_URL: ${QDRANT_URL:?QDRANT_URL is required}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:?QDRANT_API_KEY is required}
+      COLLECTION_NAME: ${COLLECTION_NAME:?COLLECTION_NAME is required}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      FASTMCP_LOG_LEVEL: INFO
+    expose:
+      - "8000"
+    volumes:
+      - embedding-cache:/home/mcp/.cache
+    networks:
+      - default
+      - qdrant
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8000),5); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 2G
+
+  qdrant-mcp-proxy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    depends_on:
+      qdrant-mcp:
+        condition: service_healthy
+    environment:
+      MCP_PROXY_BEARER_TOKEN: ${MCP_PROXY_BEARER_TOKEN:?MCP_PROXY_BEARER_TOKEN is required}
+    configs:
+      - source: caddy_config
+        target: /etc/caddy/Caddyfile
+    ports:
+      - ${MCP_PROXY_PORTS:?MCP_PROXY_PORTS is required}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+networks:
+  qdrant:
+    external: true
+    name: ${QDRANT_NETWORK:?QDRANT_NETWORK is required}
+
+volumes:
+  embedding-cache:
+
+configs:
+  caddy_config:
+    content: |
+      {
+        auto_https off
+      }
+
+      :8080 {
+        handle /health {
+          respond 200
+        }
+
+        @bearer header Authorization "Bearer {$$MCP_PROXY_BEARER_TOKEN}"
+
+        handle @bearer {
+          rewrite * /mcp/
+          reverse_proxy qdrant-mcp:8000
+        }
+
+        handle {
+          respond "Unauthorized" 401
+        }
+      }

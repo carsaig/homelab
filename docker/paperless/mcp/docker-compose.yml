@@ -1,0 +1,80 @@
+services:
+  paperless-mcp:
+    image: ghcr.io/baruchiro/paperless-mcp@sha256:abba37e831e789633900d3f6911768484b24f989793a05df83c8f95bb24ac8c5
+    restart: unless-stopped
+    environment:
+      PAPERLESS_URL: ${PAPERLESS_URL:?PAPERLESS_URL is required}
+      PAPERLESS_API_KEY: ${PAPERLESS_API_KEY:?PAPERLESS_API_KEY is required}
+      PAPERLESS_PUBLIC_URL: ${PAPERLESS_PUBLIC_URL:?PAPERLESS_PUBLIC_URL is required}
+      PAPERLESS_API_VERSION: ${PAPERLESS_API_VERSION:-9}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "const s=require('net').connect(3000,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  paperless-mcp-proxy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    depends_on:
+      paperless-mcp:
+        condition: service_healthy
+    environment:
+      MCP_PROXY_BEARER_TOKEN: ${MCP_PROXY_BEARER_TOKEN:?MCP_PROXY_BEARER_TOKEN is required}
+      PAPERLESS_API_KEY: ${PAPERLESS_API_KEY:?PAPERLESS_API_KEY is required}
+    configs:
+      - source: caddy_config
+        target: /etc/caddy/Caddyfile
+    ports:
+      - ${MCP_PROXY_PORTS:?MCP_PROXY_PORTS is required}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+configs:
+  caddy_config:
+    content: |
+      {
+        auto_https off
+      }
+
+      :8080 {
+        handle /health {
+          respond 200
+        }
+
+        @bearer header Authorization "Bearer {$$MCP_PROXY_BEARER_TOKEN}"
+
+        handle @bearer {
+          rewrite * /mcp
+          reverse_proxy paperless-mcp:3000 {
+            header_up Authorization "Bearer {$$PAPERLESS_API_KEY}"
+          }
+        }
+
+        handle {
+          respond "Unauthorized" 401
+        }
+      }

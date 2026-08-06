@@ -1,0 +1,29 @@
+services:
+  neo4j-mcp:
+    image: mcp/neo4j-cypher:latest
+    container_name: neo4j-mcp
+    ports:
+      - ${PORTS}
+    environment:
+      - NEO4J_URI=${URI}
+      - NEO4J_USERNAME=${USERNAME}
+      - NEO4J_PASSWORD=${PASSWORD}
+      - NEO4J_DATABASE=${DATABASE}
+      - NEO4J_TRANSPORT=${TRANSPORT}
+      - NEO4J_MCP_SERVER_HOST=${MCP_SERVER_HOST}
+      - NEO4J_MCP_SERVER_PORT=${MCP_SERVER_PORT}
+      - NEO4J_MCP_SERVER_ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    restart: unless-stopped
+    networks:
+      - platform
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}

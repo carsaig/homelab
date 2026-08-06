@@ -1,0 +1,63 @@
+services:
+  livekit:
+    image: livekit/livekit-server@sha256:3497163e15c48fef6e7830c78716f9e9d5edc28abf7aa90b61c86e93bbc306b1
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    configs:
+      - source: livekit_yaml
+        target: /etc/livekit.yaml
+    ports:
+      - "${EC_UDP_PUBLISH:?EC_UDP_PUBLISH is required}"
+    networks: [platform]
+
+  lk-jwt:
+    image: ghcr.io/element-hq/lk-jwt-service@sha256:29918567e6b7cd920e2853b4cd6848ce01b79947c3d19a9f1ed5b74f0a2a88bf
+    restart: unless-stopped
+    environment:
+      LIVEKIT_URL: "${LIVEKIT_WS_URL}"
+      LIVEKIT_KEY: "${LIVEKIT_API_KEY}"
+      LIVEKIT_SECRET: "${LIVEKIT_API_SECRET}"
+      LIVEKIT_FULL_ACCESS_HOMESERVERS: "${FULL_ACCESS_HS}"
+      LIVEKIT_JWT_BIND: ":8080"
+      LIVEKIT_LOG_LEVEL: "info"
+    networks: [platform]
+
+  element-call:
+    image: ghcr.io/element-hq/element-call@sha256:146cd417e74822c27586ef1569d50d2c2bda8a300107b305fe83d67bb36b754e
+    restart: unless-stopped
+    configs:
+      - source: ec_config
+        target: /app/config.json
+    networks: [platform]
+
+networks:
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}
+
+configs:
+  livekit_yaml:
+    content: |
+      port: 7880
+      rtc:
+        udp_port: 7881
+        use_external_ip: ${LIVEKIT_USE_EXTERNAL_IP:?LIVEKIT_USE_EXTERNAL_IP is required}
+      turn:
+        enabled: false
+      keys:
+        ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+      logging:
+        level: info
+
+  ec_config:
+    content: |
+      {
+        "default_server_config": {
+          "m.homeserver": {
+            "base_url": "${MATRIX_BASE_URL}",
+            "server_name": "${MATRIX_SERVER_NAME}"
+          }
+        },
+        "livekit": { "livekit_service_url": "${LIVEKIT_JWT_URL}" },
+        "matrix_rtc_mode": "matrix_2_0"
+      }
