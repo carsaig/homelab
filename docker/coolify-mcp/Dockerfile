@@ -3,14 +3,17 @@ FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb836
 
 ARG COOLIFY_MCP_VERSION=2.19.3
 ARG MCP_PROXY_VERSION=0.12.0
-ARG IMAGE_REV=1
+ARG MCP_SDK_VERSION=1.29.0
+ARG IMAGE_REV=2
 
 LABEL org.opencontainers.image.source="https://github.com/carsaig/homelab" \
       org.opencontainers.image.version="${COOLIFY_MCP_VERSION}-${IMAGE_REV}"
 
 RUN apk add --no-cache python3 py3-pip \
     && python3 -m venv /opt/mcp-proxy \
-    && /opt/mcp-proxy/bin/pip install --no-cache-dir "mcp-proxy==${MCP_PROXY_VERSION}" \
+    && /opt/mcp-proxy/bin/pip install --no-cache-dir \
+        "mcp==${MCP_SDK_VERSION}" \
+        "mcp-proxy==${MCP_PROXY_VERSION}" \
     && addgroup -S app \
     && adduser -S -G app -h /home/app app
 
