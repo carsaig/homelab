@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: build-coolify-mcp
+  group: build-coolify-mcp-v2
   cancel-in-progress: true
 
 permissions:
