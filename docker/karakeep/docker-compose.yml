@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     volumes:
       - type: bind
-        source: ${KARAKEEP_DATA_PATH:?KARAKEEP_DATA_PATH is required}
+        source: ${KARAKEEP_DATA_PATH}
         target: /data
         bind:
           create_host_path: false
@@ -26,7 +26,7 @@ services:
     image: gcr.io/zenika-hub/alpine-chrome:123
     restart: unless-stopped
     command:
-      - ${CHROME_RUNTIME_ARG:?CHROME_RUNTIME_ARG is required}
+      - ${CHROME_RUNTIME_ARG}
       - --disable-gpu
       - --disable-dev-shm-usage
       - --remote-debugging-address=0.0.0.0
@@ -54,4 +54,4 @@ services:
 volumes:
   meilisearch:
     external: true
-    name: ${MEILI_VOLUME_NAME:?MEILI_VOLUME_NAME is required}
+    name: ${MEILI_VOLUME_NAME}
