@@ -526,6 +526,48 @@ jobs:
           echo "--- Verifying patched file ---"
           grep -n 'formatQualifiedModel' "omniroute-src/src/app/(dashboard)/dashboard/analytics/ComboHealthTab.tsx"
 
+      - name: Fix Gemini sanitizer for digit-leading function-declaration names
+        # Bug: normalizeGeminiToolName() in open-sse/translator/helpers/
+        # geminiToolsSanitizer.ts strips invalid chars, collapses runs of
+        # underscores and trims leading/trailing underscores — but never
+        # guarantees the RESULT starts with a letter or underscore. Gemini and
+        # Vertex reject any function declaration whose name starts with a digit:
+        #   "400 ... function_declarations[0].name: Invalid function name.
+        #    Must start with a letter or an underscore."
+        # Digit-leading tool names (e.g. MCP tools like "1Password_append_variables",
+        # "2fa_code", "0_search") pass through unchanged, so every target in a
+        # Gemini combo fails with the same bad_request. Fix: after normalization,
+        # prefix any leading non-letter/underscore char with "tool_".
+        run: |
+          set -euo pipefail
+          cat > /tmp/patch-gemini-tools-sanitizer.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const path = "omniroute-src/open-sse/translator/helpers/geminiToolsSanitizer.ts";
+          let content = readFileSync(path, "utf8");
+
+          const anchor = '.replace(/^_+|_+$/g, "")';
+          const count = content.split(anchor).length - 1;
+          if (count !== 1) {
+            console.error(
+              `Expected exactly 1 match of the trailing-underscore trim in ${path}, found ${count} - upstream source changed, aborting patch.`
+            );
+            process.exit(1);
+          }
+          content = content.replace(
+            anchor,
+            anchor + '\n    .replace(/^([^a-zA-Z_])/, "tool_$1")'
+          );
+
+          writeFileSync(path, content);
+          console.log("geminiToolsSanitizer.ts patched: digit-leading names prefixed with tool_");
+          NODEEOF
+
+          node /tmp/patch-gemini-tools-sanitizer.mjs
+
+          echo "--- Verifying patched sanitizer ---"
+          grep -n 'tool_\$1' "omniroute-src/open-sse/translator/helpers/geminiToolsSanitizer.ts"
+
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
