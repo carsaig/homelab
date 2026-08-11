@@ -1,0 +1,35 @@
+# Reverse-proxy router — template
+#
+# The live file is maintained privately on the host, in the proxy's dynamic
+# configuration directory. Only the shape is published here.
+#
+# Two properties matter and are easy to get wrong:
+#
+#   1. The private-network gate is an IP allow-list middleware, not the absence
+#      of a public DNS record. Omitting a public record makes the service
+#      unlisted, not protected: a client that knows the address and sets the
+#      Host header would otherwise reach it. The middleware is the boundary.
+#
+#   2. The certificate resolver uses a DNS-01 challenge against a wildcard for
+#      the parent domain. HTTP-01 cannot work here, because the challenge
+#      requires public reachability that this service deliberately lacks.
+
+http:
+  routers:
+    forgejo-websecure:
+      rule: Host(`<hostname>`)
+      service: forgejo-service
+      entryPoints:
+        - websecure
+      middlewares:
+        - <private-network-allowlist-middleware>
+      priority: 100
+      tls:
+        certResolver: <dns-01-resolver>
+        domains:
+          - main: "<wildcard-for-parent-domain>"
+  services:
+    forgejo-service:
+      loadBalancer:
+        servers:
+          - url: http://<container-name>:<internal-http-port>

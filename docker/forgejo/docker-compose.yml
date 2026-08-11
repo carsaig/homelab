@@ -1,0 +1,109 @@
+services:
+  forgejo:
+    image: ${FORGEJO_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      USER_UID: ${FORGEJO_UID}
+      USER_GID: ${FORGEJO_GID}
+
+      # --- Identity -------------------------------------------------------
+      # ROOT_URL is a single, permanent value. It drives displayed clone
+      # URLs, webhook payloads, OIDC redirect URIs and mail links. Reachability
+      # is controlled at the DNS and reverse-proxy layer, never here.
+      FORGEJO__server__DOMAIN: ${FORGEJO_DOMAIN}
+      FORGEJO__server__ROOT_URL: ${FORGEJO_ROOT_URL}
+      FORGEJO__server__HTTP_PORT: ${FORGEJO_HTTP_PORT}
+
+      # --- Git over SSH ---------------------------------------------------
+      # The built-in SSH server listens inside the container and is published
+      # on a restricted host binding. SSH_PORT is what Forgejo advertises in
+      # clone URLs; SSH_LISTEN_PORT is what it actually binds internally.
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__server__SSH_DOMAIN: ${FORGEJO_SSH_DOMAIN}
+      FORGEJO__server__SSH_PORT: ${FORGEJO_SSH_ADVERTISED_PORT}
+      FORGEJO__server__SSH_LISTEN_PORT: ${FORGEJO_SSH_LISTEN_PORT}
+
+      # --- Database -------------------------------------------------------
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: db:5432
+      FORGEJO__database__NAME: ${POSTGRES_DB}
+      FORGEJO__database__USER: ${POSTGRES_USER}
+      FORGEJO__database__PASSWD: ${POSTGRES_PASSWORD}
+
+      # --- Access posture -------------------------------------------------
+      # Closed instance: no self-registration, nothing readable anonymously,
+      # new repositories private by default.
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
+      FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION: "false"
+      FORGEJO__repository__DEFAULT_PRIVATE: private
+      FORGEJO__repository__DEFAULT_PUSH_CREATE_PRIVATE: "true"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__session__COOKIE_SECURE: "true"
+
+      # --- Push mirrors ---------------------------------------------------
+      # Selective publication path: a repository is shared publicly by
+      # mirroring it outward, never by widening this instance's exposure.
+      FORGEJO__mirror__ENABLED: "true"
+      FORGEJO__mirror__DISABLE_NEW_PUSH: "false"
+
+      # --- CI -------------------------------------------------------------
+      # Enabled ahead of any runner being registered; inert until one exists.
+      FORGEJO__actions__ENABLED: "true"
+
+      FORGEJO__log__LEVEL: ${FORGEJO_LOG_LEVEL}
+    volumes:
+      - forgejo-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      # Bound to a single non-public interface; git-over-SSH never reaches
+      # the reverse proxy because Traefik terminates HTTP, not TCP.
+      - ${FORGEJO_SSH_BIND}
+    networks:
+      - proxy
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--output", "/dev/null", "http://127.0.0.1:${FORGEJO_HTTP_PORT}/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  db:
+    image: ${POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - forgejo-db:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  # Shared reverse-proxy network. Only the application joins it; the
+  # database is deliberately unreachable from it.
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK_NAME}
+  internal:
+    driver: bridge
+
+volumes:
+  forgejo-data:
+    external: true
+    name: ${FORGEJO_DATA_VOLUME}
+  forgejo-db:
+    external: true
+    name: ${FORGEJO_DB_VOLUME}
