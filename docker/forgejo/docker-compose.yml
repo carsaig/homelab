@@ -18,13 +18,17 @@ services:
       FORGEJO__server__HTTP_PORT: ${FORGEJO_HTTP_PORT}
 
       # --- Git over SSH ---------------------------------------------------
-      # The built-in SSH server listens inside the container and is published
-      # on a restricted host binding. SSH_PORT is what Forgejo advertises in
-      # clone URLs; SSH_LISTEN_PORT is what it actually binds internally.
-      FORGEJO__server__START_SSH_SERVER: "true"
+      # This image runs its own OpenSSH daemon on the standard port. The
+      # application's built-in SSH server must therefore stay disabled, or both
+      # contend for the same socket and the container restart-loops. The
+      # built-in server belongs to the rootless image variant, which ships no
+      # daemon of its own.
+      #
+      # SSH_PORT is the port advertised in clone URLs, which is the published
+      # host port rather than the one bound inside the container.
+      FORGEJO__server__START_SSH_SERVER: "false"
       FORGEJO__server__SSH_DOMAIN: ${FORGEJO_SSH_DOMAIN}
       FORGEJO__server__SSH_PORT: ${FORGEJO_SSH_ADVERTISED_PORT}
-      FORGEJO__server__SSH_LISTEN_PORT: ${FORGEJO_SSH_LISTEN_PORT}
 
       # --- Database -------------------------------------------------------
       FORGEJO__database__DB_TYPE: postgres
