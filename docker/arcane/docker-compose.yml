@@ -1,0 +1,24 @@
+services:
+  arcane:
+    # Pinned deliberately. The in-app updater derives its target from this tag,
+    # so a pin makes self-update a no-op by design — version changes land here.
+    image: ghcr.io/getarcaneapp/arcane:v2.7.0
+    container_name: arcane
+    restart: unless-stopped
+    ports:
+      # Bound to a private management address only, never the public interface.
+      # A reverse proxy is the sole ingress path.
+      - ${ARCANE_BIND:?ARCANE_BIND is required}
+    environment:
+      GIN_MODE: release
+      ENVIRONMENT: production
+      PORT: "3552"
+      APP_URL: ${ARCANE_APP_URL:?ARCANE_APP_URL is required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      # Trust X-Forwarded-* headers only from the reverse proxy.
+      TRUSTED_PROXIES: ${ARCANE_TRUSTED_PROXIES:?ARCANE_TRUSTED_PROXIES is required}
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
