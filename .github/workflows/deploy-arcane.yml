@@ -1,0 +1,150 @@
+name: Deploy arcane
+
+# Rolls docker/arcane/docker-compose.yml out to the management host.
+#
+# The pinned image tag in that file is the single source of truth for which
+# version runs — Arcane's in-app updater resolves its target from the running
+# container's own image reference, so a pinned tag makes self-update a no-op by
+# design. Version changes happen here.
+#
+# Run with a `version` input to bump the pin, commit it, and deploy in one go;
+# run with no input to re-apply whatever is currently committed.
+#
+# The host is not reachable from the public internet. The runner joins the
+# tailnet as a short-lived, tagged, ephemeral node for the duration of the job.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image tag to pin and deploy, e.g. v2.8.0 (blank = redeploy committed version)"
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "docker/arcane/docker-compose.yml"
+      - ".github/workflows/deploy-arcane.yml"
+
+concurrency:
+  group: deploy-arcane
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  IMAGE_REPO: ghcr.io/getarcaneapp/arcane
+  COMPOSE_FILE: docker/arcane/docker-compose.yml
+  REMOTE_DIR: /mnt/data/arcane
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          # A PAT/deploy key is not needed: the default token can push to main
+          # because `permissions.contents` is write above.
+          persist-credentials: true
+
+      - name: Validate requested tag exists upstream
+        if: inputs.version != ''
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.version }}'
+          case "$tag" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::Version must look like v2.8.0, got '$tag'"; exit 1 ;;
+          esac
+          token=$(curl -fsSL \
+            "https://ghcr.io/token?scope=repository%3Agetarcaneapp%2Farcane%3Apull&service=ghcr.io" \
+            | jq -r .token)
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $token" \
+            -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
+            "https://ghcr.io/v2/getarcaneapp/arcane/manifests/$tag")
+          if [ "$code" != "200" ]; then
+            echo "::error::$IMAGE_REPO:$tag not found in registry (HTTP $code)"
+            exit 1
+          fi
+          echo "Confirmed $IMAGE_REPO:$tag exists."
+
+      - name: Pin requested version and commit
+        if: inputs.version != ''
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.version }}'
+          current=$(sed -n "s|.*image: $IMAGE_REPO:\(.*\)|\1|p" "$COMPOSE_FILE")
+          if [ "$current" = "$tag" ]; then
+            echo "Already pinned to $tag; nothing to commit."
+            exit 0
+          fi
+          sed -i "s|image: $IMAGE_REPO:.*|image: $IMAGE_REPO:$tag|" "$COMPOSE_FILE"
+          grep -q "image: $IMAGE_REPO:$tag" "$COMPOSE_FILE" \
+            || { echo "::error::Pin rewrite failed"; exit 1; }
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "$COMPOSE_FILE"
+          git commit -m "Pin arcane image to $tag (was $current)"
+          git push
+          echo "Pinned $current -> $tag"
+
+      - name: Join tailnet as ephemeral node
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat >> ~/.ssh/config <<'EOF'
+          Host deploy-target
+            User ubuntu
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 20
+          EOF
+          printf '  Hostname %s\n' '${{ secrets.ARCANE_DEPLOY_HOST }}' >> ~/.ssh/config
+
+      - name: Copy compose definition to host
+        run: |
+          set -euo pipefail
+          scp "$COMPOSE_FILE" "deploy-target:$REMOTE_DIR/compose.yaml"
+
+      - name: Apply
+        run: |
+          set -euo pipefail
+          ssh deploy-target "set -euo pipefail
+            cd '$REMOTE_DIR'
+            docker compose config --quiet
+            docker compose pull
+            docker compose up -d --remove-orphans"
+
+      - name: Verify running version
+        run: |
+          set -euo pipefail
+          expected=$(sed -n "s|.*image: $IMAGE_REPO:\(.*\)|\1|p" "$COMPOSE_FILE")
+          for attempt in $(seq 1 12); do
+            actual=$(ssh deploy-target \
+              "docker inspect arcane --format '{{.Config.Image}}'" 2>/dev/null \
+              | sed "s|$IMAGE_REPO:||" || true)
+            if [ "$actual" = "$expected" ]; then
+              echo "Running $expected as expected."
+              ssh deploy-target "docker ps --filter name=arcane \
+                --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'"
+              exit 0
+            fi
+            echo "attempt $attempt: running '$actual', want '$expected' — retrying"
+            sleep 5
+          done
+          echo "::error::Host is running '$actual' but $COMPOSE_FILE pins '$expected'"
+          ssh deploy-target "docker logs arcane --tail 50" || true
+          exit 1
