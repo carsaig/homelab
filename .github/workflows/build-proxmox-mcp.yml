@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "docker/proxmox-mcp/**"
+      - "docker/mcp/proxmox/**"
       - ".github/workflows/build-proxmox-mcp.yml"
   workflow_dispatch: {}
 
@@ -32,7 +32,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          version=$(grep -oP 'IMAGE_VERSION=\K[0-9][0-9A-Za-z.+-]*' docker/proxmox-mcp/Dockerfile)
+          version=$(grep -oP 'IMAGE_VERSION=\K[0-9][0-9A-Za-z.+-]*' docker/mcp/proxmox/Dockerfile)
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -48,7 +48,7 @@ jobs:
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
-          context: docker/proxmox-mcp
+          context: docker/mcp/proxmox
           platforms: linux/arm64
           push: true
           tags: |

@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "docker/karakeep-mcp/**"
+      - "docker/karakeep/mcp/**"
       - ".github/workflows/build-karakeep-mcp.yml"
   workflow_dispatch: {}
 
@@ -32,7 +32,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          version=$(grep -oP 'KARAKEEP_MCP_VERSION=\K[0-9][0-9.]*' docker/karakeep-mcp/Dockerfile)
+          version=$(grep -oP 'KARAKEEP_MCP_VERSION=\K[0-9][0-9.]*' docker/karakeep/mcp/Dockerfile)
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -48,7 +48,7 @@ jobs:
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
-          context: docker/karakeep-mcp
+          context: docker/karakeep/mcp
           platforms: linux/arm64
           push: true
           tags: |
