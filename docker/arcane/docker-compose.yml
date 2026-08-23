@@ -2,7 +2,7 @@ services:
   arcane:
     # Pinned deliberately. The in-app updater derives its target from this tag,
     # so a pin makes self-update a no-op by design — version changes land here.
-    image: ghcr.io/getarcaneapp/arcane:v2.7.0
+    image: ghcr.io/getarcaneapp/arcane:v2.8.1
     container_name: arcane
     restart: unless-stopped
     ports:
