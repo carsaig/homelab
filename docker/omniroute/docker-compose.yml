@@ -14,7 +14,7 @@ services:
 
   omniroute:
     container_name: omniroute
-    image: ghcr.io/carsaig/omniroute:v3.8.49.001@sha256:f8a447d897733851af868da3ba3d93e76a4f67ec831551890ef9dc7738ff22e3
+    image: ghcr.io/carsaig/omniroute:v3.8.49.002@sha256:1a580a8cd11b336aed214f735f42ec414c757304770634d8eba453b7e86cc3cc
     pull_policy: always
     restart: unless-stopped
     stop_grace_period: 40s
@@ -47,6 +47,7 @@ services:
       BIFROST_BASE_URL: ${BIFROST_BASE_URL}
       BIFROST_API_KEY: ${BIFROST_API_KEY}
       OMNIROUTE_RELAY_BACKEND: auto
+      OMNIROUTE_OPTIONAL_ENRICHMENT_ENABLED: "false"
       CLI_MODE: ${CLI_MODE:?CLI_MODE is required}
       CLI_EXTRA_PATHS: /host-local/bin:/host-npm-global/bin
       CLI_CONFIG_HOME: /host-home
