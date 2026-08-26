@@ -14,7 +14,7 @@ services:
 
   omniroute:
     container_name: omniroute
-    image: ghcr.io/carsaig/omniroute:v3.8.49.004@sha256:adc4aa0a488c797cec01831a631fc01f7082ab402a53fa29b5252566e0b1542a
+    image: ghcr.io/carsaig/omniroute:v3.8.49.003@sha256:944e6d3077ceaf0a76e60dbfde9937ea5d0af9dab911d578d6e3247fb95eda85
     pull_policy: always
     restart: unless-stopped
     stop_grace_period: 40s
@@ -48,7 +48,6 @@ services:
       BIFROST_API_KEY: ${BIFROST_API_KEY}
       OMNIROUTE_RELAY_BACKEND: auto
       OMNIROUTE_OPTIONAL_ENRICHMENT_ENABLED: "true"
-      OMNIROUTE_OPTIONAL_ENRICHMENT_DEADLINE_MS: "500"
       OMNIROUTE_SKILLS_BIFROST_URL: ${OMNIROUTE_SKILLS_BIFROST_URL:?OMNIROUTE_SKILLS_BIFROST_URL is required}
       OMNIROUTE_SKILLS_BIFROST_KEY: ${OMNIROUTE_SKILLS_BIFROST_KEY:?OMNIROUTE_SKILLS_BIFROST_KEY is required}
       OMNIROUTE_SKILLS_TELEMETRY_SALT: ${OMNIROUTE_SKILLS_TELEMETRY_SALT:?OMNIROUTE_SKILLS_TELEMETRY_SALT is required}
