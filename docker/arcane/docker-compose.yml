@@ -8,16 +8,16 @@ services:
     ports:
       # Bound to a private management address only, never the public interface.
       # A reverse proxy is the sole ingress path.
-      - ${ARCANE_BIND:?ARCANE_BIND is required}
+      - ${ARCANE_BIND}
     environment:
       GIN_MODE: release
       ENVIRONMENT: production
       PORT: "3552"
-      APP_URL: ${ARCANE_APP_URL:?ARCANE_APP_URL is required}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      APP_URL: ${ARCANE_APP_URL}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      JWT_SECRET: ${JWT_SECRET}
       # Trust X-Forwarded-* headers only from the reverse proxy.
-      TRUSTED_PROXIES: ${ARCANE_TRUSTED_PROXIES:?ARCANE_TRUSTED_PROXIES is required}
+      TRUSTED_PROXIES: ${ARCANE_TRUSTED_PROXIES}
       DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
