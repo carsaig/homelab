@@ -7,7 +7,7 @@
 # Read-only cache: it holds no images of its own, it only fetches and keeps
 # copies of what was asked for. Losing it costs a re-download, nothing else.
 #
-# CACHE_BIND binds it to the private interface only, CACHE_DATA points at the
+# GHCR_CACHE_BIND binds it to the private interface only, GHCR_CACHE_DATA points at the
 # cache directory. Both come from the stack's environment.
 services:
   ghcr-cache:
@@ -15,9 +15,9 @@ services:
     container_name: ghcr-cache
     restart: unless-stopped
     ports:
-      - ${CACHE_BIND}
+      - ${GHCR_CACHE_BIND}
     environment:
       REGISTRY_PROXY_REMOTEURL: https://ghcr.io
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
     volumes:
-      - ${CACHE_DATA}:/var/lib/registry
+      - ${GHCR_CACHE_DATA}:/var/lib/registry
