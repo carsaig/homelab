@@ -122,15 +122,14 @@ jobs:
       - name: Prepare build workspace
         run: |
           set -euo pipefail
-          # Arcane runs as uid 65532 — the nonroot user of its distroless base
-          # image — so it cannot write anywhere owned by root. Docker creates a
-          # missing bind-mount source as root, which reproduces the exact
-          # "mkdir /builds: permission denied" this is here to prevent, one level
-          # down and with no hint as to why. Creating and chowning it here keeps
-          # the deploy reproducible on a rebuilt host.
+          # The application runs unprivileged and cannot write anywhere owned by
+          # root. Docker creates a missing bind-mount source as root, which
+          # reproduces the exact "permission denied" this is here to prevent, one
+          # level down and with no hint as to why. Creating and chowning it here
+          # keeps the deploy reproducible on a rebuilt host.
           #
-          # After an image bump, confirm the uid still holds:
-          #   ssh zurich-1 'docker top arcane -o user,args'
+          # After an image bump, confirm the uid still holds with
+          # "docker top <container> -o user,args" on the host. Note that
           # .Config.User reports what the entrypoint starts as, not what the
           # application ends up running as.
           ssh deploy-target "set -euo pipefail

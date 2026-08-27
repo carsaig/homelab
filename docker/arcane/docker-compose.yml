@@ -23,8 +23,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
       # Build workspace, deliberately outside ./data so build contexts and caches
-      # can be wiped or excluded from backups without touching arcane.db.
-      # The application runs as uid 65532 and cannot create directories at the
-      # container root, so this path must exist and be owned by that uid before
-      # the container starts — see "Prepare build workspace" in deploy-arcane.yml.
+      # can be wiped or excluded from backups without touching the database.
+      # The application runs unprivileged and cannot create directories at the
+      # container root, so this path must exist and be owned by the application
+      # user before the container starts — see the prepare step in the workflow.
       - ./builds:/builds
