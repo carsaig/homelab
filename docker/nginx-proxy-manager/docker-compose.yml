@@ -1,0 +1,68 @@
+# Reverse proxy and tunnel for the estate.
+#
+# Volume paths are absolute, driven by DATA_ROOT, and deliberately not relative
+# to this file. The management UI keeps project files under its own directory, so
+# relative paths would resolve there — against empty directories — and the proxy
+# would come up with no hosts, no certificates and an empty database. The data
+# stays where it is; only the definition moves.
+#
+# REGISTRY points at a pull-through cache. This host has no general egress and
+# cannot reach the upstream registries directly.
+#
+# Every value below comes from the stack's environment. Nothing identifying and
+# no secret belongs in this file.
+services:
+  app:
+    image: ${REGISTRY}/jc21/nginx-proxy-manager:2.15.1
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      TZ: ${TZ}
+      DB_POSTGRES_HOST: db
+      DB_POSTGRES_PORT: "5432"
+      DB_POSTGRES_USER: npm
+      DB_POSTGRES_PASSWORD: ${DB_PASSWORD}
+      DB_POSTGRES_NAME: npm
+      IP_RANGES_FETCH_ENABLED: "false"
+    volumes:
+      - ${DATA_ROOT}/data:/data
+      - ${DATA_ROOT}/letsencrypt:/etc/letsencrypt
+      - certbot-packages:/opt/certbot/lib/python3.11/site-packages
+      - ${DATA_ROOT}/patches/certbot.js:/app/lib/certbot.js:ro
+    depends_on:
+      - db
+
+  db:
+    # Official images need the library/ prefix through a cache; the upstream
+    # inserts it implicitly, a pull-through does not.
+    image: ${REGISTRY}/library/postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: npm
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: npm
+    volumes:
+      - ${DATA_ROOT}/postgresql/data:/var/lib/postgresql/data
+
+  cloudflared:
+    image: ${REGISTRY}/cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --edge-ip-version 6 run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - app
+
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+        - subnet: fd00:dead:cafe::/48
+
+volumes:
+  certbot-packages:
