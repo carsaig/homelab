@@ -14,7 +14,7 @@ services:
 
   omniroute:
     container_name: omniroute
-    image: ghcr.io/carsaig/omniroute:v3.8.49.005@sha256:67da31b77414d477dde13a4ce7992775603182a4d3df77fceb0e88ec558af3ca
+    image: ghcr.io/carsaig/omniroute:v3.8.49.006@sha256:1f188c780ca6db001addecc4989d526fcb11e0658b0371b3fd9b0646917653db
     pull_policy: always
     restart: unless-stopped
     stop_grace_period: 40s
