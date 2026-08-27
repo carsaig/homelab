@@ -119,6 +119,24 @@ jobs:
           set -euo pipefail
           scp "$COMPOSE_FILE" "deploy-target:$REMOTE_DIR/compose.yaml"
 
+      - name: Prepare build workspace
+        run: |
+          set -euo pipefail
+          # The application runs unprivileged and cannot write anywhere owned by
+          # root. Docker creates a missing bind-mount source as root, which
+          # reproduces the exact "permission denied" this is here to prevent, one
+          # level down and with no hint as to why. Creating and chowning it here
+          # keeps the deploy reproducible on a rebuilt host.
+          #
+          # After an image bump, confirm the uid still holds with
+          # "docker top <container> -o user,args" on the host. Note that
+          # .Config.User reports what the entrypoint starts as, not what the
+          # application ends up running as.
+          ssh deploy-target "set -euo pipefail
+            mkdir -p '$REMOTE_DIR/builds'
+            sudo chown 65532:65532 '$REMOTE_DIR/builds'
+            ls -ldn '$REMOTE_DIR/builds'"
+
       - name: Apply
         run: |
           set -euo pipefail

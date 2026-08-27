@@ -1,0 +1,46 @@
+# Forgejo Actions runner.
+#
+# Deployed by the management UI's git sync rather than by a workflow: git holds
+# the compose, the UI reconciles it onto the host and supplies runtime values
+# through the project's .env. Do not add a deploy workflow as well — two actors
+# writing the same stack will fight over it.
+#
+# Registration happens once, out of band, and writes a .runner file holding a
+# runner token. Re-registering creates a second runner and orphans this one.
+#
+# Every host-specific value comes from the 1Password Environment for this stack.
+# Nothing identifying belongs in this file.
+services:
+  runner:
+    image: code.forgejo.org/forgejo/runner:13.0.0
+    container_name: forgejo-runner
+    restart: unless-stopped
+    user: ${USER:?USER is required}
+    working_dir: /data
+    command: forgejo-runner daemon
+
+    # Containers do not inherit the host's local resolver stub, so internal names
+    # do not resolve without an explicit resolver here. A missing value makes
+    # registration hang rather than fail, which is easy to misread.
+    dns:
+      - ${DNS:?DNS is required}
+
+    # gid of the host's docker group. Needed because the container runs
+    # unprivileged while the socket is mode 0660.
+    group_add:
+      - ${DOCKER_GROUP_GUID:?DOCKER_GROUP_GUID is required}
+
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+
+    volumes:
+      # Absolute rather than relative to this file: it holds the .runner
+      # registration, which belongs to the host and not to whichever directory a
+      # deploy happens to run from. The management UI keeps project files under
+      # its own data directory, so a relative path would silently start an
+      # unregistered runner.
+      - ${VOLUME_PATH_DATA:?VOLUME_PATH_DATA is required}:/data
+
+      # Jobs run against the host daemon: they share its layer cache and appear
+      # in the management UI, at the cost of being able to control that daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
