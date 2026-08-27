@@ -1,0 +1,266 @@
+services:
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: Plane-REDIS
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ${PLANE_REDIS_PATH}:/data:rw
+    environment:
+      TZ: ${TZ}
+    restart: on-failure:5
+
+  db:
+    image: postgres:${POSTGRES_VERSION}
+    command: postgres -c 'max_connections=1000'
+    container_name: Plane-DB
+    hostname: plane-db
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 45s
+      retries: 10
+    volumes:
+      - ${PLANE_DB_PATH}:/var/lib/postgresql:rw
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
+    restart: on-failure:5
+
+  plane-mq:
+    image: rabbitmq:${RABBITMQ_VERSION}
+    container_name: Plane-RABBITMQ
+    hostname: plane-mq
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ${PLANE_RABBITMQ_PATH}:/var/lib/rabbitmq:rw
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+      TZ: ${TZ}
+    restart: on-failure:5
+
+  minio:
+    image: minio/minio:${MINIO_VERSION}
+    command: server /export --console-address ":9090"
+    container_name: Plane-MINIO
+    hostname: plane-minio
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ${PLANE_UPLOADS_PATH}:/export:rw
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+      TZ: ${TZ}
+    restart: on-failure:5
+
+  # One-shot schema migration. Every long-running application service gates on
+  # this completing successfully, so a version bump can never leave the API
+  # waiting on migrations that nothing is going to apply.
+  migrator:
+    image: ${PLANE_REGISTRY}/plane-backend:${PLANE_IMAGE_TAG}
+    container_name: Plane-MIGRATOR
+    command: ./bin/docker-entrypoint-migrator.sh
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      plane-mq:
+        condition: service_healthy
+    restart: "no"
+
+  back:
+    image: ${PLANE_REGISTRY}/plane-backend:${PLANE_IMAGE_TAG}
+    command: ./bin/docker-entrypoint-api.sh
+    container_name: Plane-BACK
+    hostname: api
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    restart: on-failure:5
+
+  worker:
+    image: ${PLANE_REGISTRY}/plane-backend:${PLANE_IMAGE_TAG}
+    command: ./bin/docker-entrypoint-worker.sh
+    container_name: Plane-WORKER
+    hostname: worker
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A plane inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      plane-mq:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    restart: on-failure:5
+
+  beat:
+    image: ${PLANE_REGISTRY}/plane-backend:${PLANE_IMAGE_TAG}
+    command: ./bin/docker-entrypoint-beat.sh
+    container_name: Plane-BEAT
+    hostname: beat-worker
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery -A plane beat' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      plane-mq:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    restart: on-failure:5
+
+  front:
+    image: ${PLANE_REGISTRY}/plane-frontend:${PLANE_IMAGE_TAG}
+    container_name: Plane-FRONT
+    hostname: web
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    env_file:
+      - .env
+    depends_on:
+      back:
+        condition: service_healthy
+    restart: on-failure:5
+
+  space:
+    image: ${PLANE_REGISTRY}/plane-space:${PLANE_IMAGE_TAG}
+    container_name: Plane-SPACE
+    hostname: plane-space
+    security_opt:
+      - no-new-privileges:true
+    user: ${PLANE_RUN_AS}
+    env_file:
+      - .env
+    depends_on:
+      back:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+    restart: on-failure:5
+
+  admin:
+    image: ${PLANE_REGISTRY}/plane-admin:${PLANE_IMAGE_TAG}
+    container_name: Plane-ADMIN
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    depends_on:
+      back:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+    restart: on-failure:5
+
+  live:
+    image: ${PLANE_REGISTRY}/plane-live:${PLANE_IMAGE_TAG}
+    container_name: Plane-LIVE
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    depends_on:
+      back:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+    restart: on-failure:5
+
+  proxy:
+    image: ${PLANE_REGISTRY}/plane-proxy:${PLANE_IMAGE_TAG}
+    container_name: Plane-PROXY
+    hostname: planeproxy
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - ${PLANE_PROXY_PORTS}
+    env_file:
+      - .env
+    environment:
+      FILE_SIZE_LIMIT: ${FILE_SIZE_LIMIT}
+      BUCKET_NAME: ${BUCKET_NAME}
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+    depends_on:
+      back:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+      space:
+        condition: service_started
+    restart: on-failure:5
