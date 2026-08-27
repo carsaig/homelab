@@ -1,0 +1,165 @@
+name: Deploy forgejo-runner
+
+# Rolls docker/forgejo-runner/docker-compose.yml out to zurich-1.
+#
+# The runner executes jobs in its own docker-in-docker daemon rather than against
+# the host socket, because Arcane manages the fleet from this same host with the
+# host socket mounted.
+#
+# Registration is NOT handled here. It happens once, out of band, and leaves a
+# .runner file under $REMOTE_DIR/data holding a runner token. This workflow must
+# never delete that directory — re-registering would create a second runner in
+# Forgejo and orphan this one.
+#
+# Run with a `version` input to bump the pin, commit it, and deploy in one go;
+# run with no input to re-apply whatever is currently committed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image tag to pin and deploy, e.g. 13.0.0 — no leading v (blank = redeploy committed version)"
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "docker/forgejo-runner/docker-compose.yml"
+      - ".github/workflows/deploy-forgejo-runner.yml"
+
+concurrency:
+  group: deploy-forgejo-runner
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  IMAGE_REPO: code.forgejo.org/forgejo/runner
+  COMPOSE_FILE: docker/forgejo-runner/docker-compose.yml
+  REMOTE_DIR: /mnt/data/forgejo-runner
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+
+      - name: Validate requested tag exists upstream
+        if: inputs.version != ''
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.version }}'
+          # Image tags carry no leading v, while the matching release does.
+          case "$tag" in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::Version must look like 13.0.0 without a leading v, got '$tag'"; exit 1 ;;
+          esac
+          token=$(curl -fsSL \
+            "https://code.forgejo.org/v2/token?scope=repository%3Aforgejo%2Frunner%3Apull&service=code.forgejo.org" \
+            | jq -er .token)
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $token" \
+            -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
+            "https://code.forgejo.org/v2/forgejo/runner/manifests/$tag")
+          if [ "$code" != "200" ]; then
+            echo "::error::$IMAGE_REPO:$tag not found in registry (HTTP $code)"
+            exit 1
+          fi
+          echo "Confirmed $IMAGE_REPO:$tag exists."
+
+      - name: Pin requested version and commit
+        if: inputs.version != ''
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.version }}'
+          current=$(sed -n "s|.*image: $IMAGE_REPO:\(.*\)|\1|p" "$COMPOSE_FILE")
+          if [ "$current" = "$tag" ]; then
+            echo "Already pinned to $tag; nothing to commit."
+            exit 0
+          fi
+          sed -i "s|image: $IMAGE_REPO:.*|image: $IMAGE_REPO:$tag|" "$COMPOSE_FILE"
+          grep -q "image: $IMAGE_REPO:$tag" "$COMPOSE_FILE" \
+            || { echo "::error::Pin rewrite failed"; exit 1; }
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "$COMPOSE_FILE"
+          git commit -m "Pin forgejo-runner image to $tag (was $current)"
+          git push
+          echo "Pinned $current -> $tag"
+
+      - name: Join tailnet as ephemeral node
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat >> ~/.ssh/config <<'EOF'
+          Host deploy-target
+            User ubuntu
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 20
+          EOF
+          # Same host as the Arcane deploy; the secret is named after the first
+          # service that needed it rather than after the host.
+          printf '  Hostname %s\n' '${{ secrets.ARCANE_DEPLOY_HOST }}' >> ~/.ssh/config
+
+      - name: Prepare runner state directory
+        run: |
+          set -euo pipefail
+          # Created, never removed: it holds the .runner registration. The runner
+          # image runs as uid 1000 and cannot write a root-owned directory, and
+          # Docker would create a missing bind-mount source as root.
+          ssh deploy-target "set -euo pipefail
+            mkdir -p '$REMOTE_DIR/data'
+            sudo chown 1000:1000 '$REMOTE_DIR' '$REMOTE_DIR/data'
+            test -f '$REMOTE_DIR/data/.runner' \
+              && echo 'registration present' \
+              || echo '::warning::no .runner found — the runner will start but stay unregistered'"
+
+      - name: Copy compose definition to host
+        run: |
+          set -euo pipefail
+          scp "$COMPOSE_FILE" "deploy-target:$REMOTE_DIR/compose.yaml"
+
+      - name: Apply
+        run: |
+          set -euo pipefail
+          ssh deploy-target "set -euo pipefail
+            cd '$REMOTE_DIR'
+            docker compose -p forgejo-runner config --quiet
+            docker compose -p forgejo-runner pull
+            docker compose -p forgejo-runner up -d --remove-orphans"
+
+      - name: Verify running version
+        run: |
+          set -euo pipefail
+          expected=$(sed -n "s|.*image: $IMAGE_REPO:\(.*\)|\1|p" "$COMPOSE_FILE")
+          for attempt in $(seq 1 12); do
+            actual=$(ssh deploy-target \
+              "docker inspect forgejo-runner --format '{{.Config.Image}}'" 2>/dev/null \
+              | sed "s|$IMAGE_REPO:||" || true)
+            if [ "$actual" = "$expected" ]; then
+              echo "Running $expected as expected."
+              ssh deploy-target "docker ps --filter name=forgejo-runner \
+                --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'"
+              exit 0
+            fi
+            echo "attempt $attempt: running '$actual', want '$expected' — retrying"
+            sleep 5
+          done
+          echo "::error::Host is running '$actual' but $COMPOSE_FILE pins '$expected'"
+          ssh deploy-target "docker logs forgejo-runner --tail 50" || true
+          exit 1
