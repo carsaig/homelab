@@ -1,15 +1,13 @@
 # Homelab platform engineering portfolio
 
 This repository contains reviewed Docker Compose definitions and supporting
-automation for a self-hosted application platform. It is intentionally written
-as a public engineering portfolio: it explains the problems solved and the
-practices applied without publishing operational topology or access details.
+automation for a homelab.
 
 ## What This Demonstrates
 
 - **Platform engineering** — independently deployable services with consistent conventions.
 - **DevOps and GitOps** — version-controlled infrastructure, automated builds, and repeatable releases.
-- **MLOps foundations** — AI gateways, model integrations, retrieval systems, and workflow automation.
+- **MLOps foundations** — AI gateways, model integrations, retrieval systems, workflow automation, custom model hosting, SKILL hostig, remote-mcp server hosting.
 - **Security engineering** — runtime secret injection, least privilege, authenticated boundaries, and minimized exposure.
 - **Reliability** — health checks, pinned artifacts, persistent-data planning, rollback paths, and observability.
 - **Cost-aware architecture** — heterogeneous infrastructure selected according to workload requirements.
@@ -34,12 +32,6 @@ docker/
     .env.example
     README.md
 ```
-
-Application READMEs are designed for three audiences:
-
-- Recruiters and business stakeholders can understand the value delivered.
-- Engineers can review the practices and trade-offs.
-- Automated agents can identify stable configuration and deployment contracts.
 
 ## Security Policy
 
