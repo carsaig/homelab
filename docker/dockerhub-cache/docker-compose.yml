@@ -3,7 +3,7 @@
 # Companion to the ghcr cache: one upstream per instance is a hard limit of this
 # registry implementation, so each remote gets its own.
 #
-# PORTS binds it to the private interface only, VOLUME_PATH_DATA points at the
+# CACHE_BIND binds it to the private interface only, CACHE_DATA points at the
 # cache directory. Both come from the stack's environment.
 services:
   dockerhub-cache:
@@ -11,9 +11,9 @@ services:
     container_name: dockerhub-cache
     restart: unless-stopped
     ports:
-      - ${PORTS}
+      - ${CACHE_BIND}
     environment:
       REGISTRY_PROXY_REMOTEURL: https://registry-1.docker.io
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
     volumes:
-      - ${VOLUME_PATH_DATA}:/var/lib/registry
+      - ${CACHE_DATA}:/var/lib/registry
