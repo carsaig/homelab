@@ -74,8 +74,8 @@ services:
     volumes:
       - ${PLANE_UPLOADS_PATH}:/export:rw
     environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       TZ: ${TZ}
     restart: on-failure:5
 
