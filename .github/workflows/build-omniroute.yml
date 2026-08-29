@@ -568,6 +568,92 @@ jobs:
           echo "--- Verifying patched sanitizer ---"
           grep -n 'tool_\$1' "omniroute-src/open-sse/translator/helpers/geminiToolsSanitizer.ts"
 
+      - name: Serve session-less MCP requests instead of rejecting them
+        # Bug: handleStreamableRequest() in open-sse/mcp-server/httpTransport.ts
+        # rejects every non-initialize request that arrives without the
+        # Mcp-Session-Id header the transport handed out at initialize.
+        #
+        # Bifrost's MCP connection checker does exactly that: its periodic
+        # ping/tools-list goes out without the session id. The check fails and
+        # takes the working connection down with it, so real tool calls fail
+        # too, not just the check. Measured 2026-08-29: fine right after a
+        # reconnect, dead at the first check ten minutes later. Most upstreams
+        # never notice because they do not enforce the header; this one does,
+        # and correctly so. Both of OmniRoute's endpoints are affected - the
+        # SSE route enforces it just the same, because the enforcement lives in
+        # the SDK transport, not in this file.
+        #
+        # Fix: fall back to a stateless transport. sessionIdGenerator: undefined
+        # disables session management in the SDK. Such a transport may serve
+        # exactly ONE request - the SDK throws "Stateless transport cannot be
+        # reused across requests" on the second - so it is built and closed per
+        # call, following the same close-the-transport-only pattern the file
+        # already uses in closeStreamableSession(). Clients that do carry a
+        # session id keep the per-session path untouched.
+        run: |
+          set -euo pipefail
+          cat > /tmp/patch-mcp-stateless-fallback.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const path = "omniroute-src/open-sse/mcp-server/httpTransport.ts";
+          let content = readFileSync(path, "utf8");
+
+          const anchor = [
+            "  if (!(await isInitializeRequest(request))) {",
+            '    return errorResponse("Bad Request: Mcp-Session-Id header is required", -32000);',
+            "  }",
+          ].join("\n");
+
+          const count = content.split(anchor).length - 1;
+          if (count !== 1) {
+            console.error(`Expected exactly 1 match of the session-id rejection in ${path}, found ${count} - upstream source changed, aborting patch.`);
+            process.exit(1);
+          }
+
+          const replacement = [
+            "  if (!(await isInitializeRequest(request))) {",
+            "    // Stateless fallback for clients that omit the session id on follow-up",
+            "    // requests. A transport built with sessionIdGenerator: undefined has",
+            "    // session management disabled, but may serve exactly one request, so it",
+            "    // is created and closed per call.",
+            "    const statelessServer = createMcpServer();",
+            "    const statelessTransport = new WebStandardStreamableHTTPServerTransport({",
+            "      sessionIdGenerator: undefined,",
+            "    });",
+            "    try {",
+            "      await statelessServer.connect(statelessTransport);",
+            "      return await withMcpHttpAuthContext(request, () =>",
+            "        handleRequestWithAuthInfo(statelessTransport, request)",
+            "      );",
+            "    } catch (err) {",
+            '      console.error("[MCP] Stateless fallback error:", err);',
+            '      return new Response(JSON.stringify({ error: "MCP transport error" }), {',
+            "        status: 500,",
+            '        headers: { "Content-Type": "application/json" },',
+            "      });",
+            "    } finally {",
+            "      try {",
+            "        statelessTransport.close();",
+            "      } catch {",
+            "        // ignore shutdown errors",
+            "      }",
+            "    }",
+            "  }",
+          ].join("\n");
+
+          content = content.replace(anchor, replacement);
+          writeFileSync(path, content);
+          console.log("httpTransport.ts patched: session-less requests served on a stateless transport");
+          NODEEOF
+
+          node /tmp/patch-mcp-stateless-fallback.mjs
+
+          echo "--- Verifying patched transport ---"
+          F="omniroute-src/open-sse/mcp-server/httpTransport.ts"
+          grep -n "sessionIdGenerator: undefined," "$F"
+          test "$(grep -c 'Mcp-Session-Id header is required' "$F")" = "0"
+          test "$(grep -c 'errorResponse(' "$F")" -ge 2
+
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
