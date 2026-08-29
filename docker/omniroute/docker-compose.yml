@@ -90,11 +90,21 @@ services:
     networks:
       - default
       - omniroute-memory
+      - shared
 
 networks:
   omniroute-memory:
     external: true
     name: ${MEMORY_NETWORK_NAME}
+  # Gemeinsames Netz der Plattform. Das Gateway erreicht diesen Dienst sonst nur
+  # über den öffentlichen Namen — und auf diesem Weg überlebt die Sitzungskennung
+  # des MCP-Transports die Proxy-Kette nicht, worauf jeder Aufruf nach dem
+  # initialize mit "Mcp-Session-Id header is required" abbricht. Über das
+  # gemeinsame Netz spricht das Gateway den Dienst direkt beim Namen an.
+  # Der Netzname kommt aus der Umgebung, damit er nicht im Repo steht.
+  shared:
+    external: true
+    name: ${SHARED_NETWORK_NAME}
 
 volumes:
   omniroute-data:
