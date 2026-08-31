@@ -6,6 +6,7 @@ services:
       - /dev/shm:/dev/shm
     environment:
       - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN}
+      - SECRET_KEY=${SECRET_KEY}
     deploy:
       resources:
         limits:
