@@ -1,10 +1,9 @@
 services:
   crawl4ai:
-    image: unclecode/crawl4ai:latest
+    image: unclecode/crawl4ai:0.9.3
     container_name: crawl4ai
     volumes:
       - /dev/shm:/dev/shm
-      - crawl4ai-data:/home/appuser/.cache
     environment:
       - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN}
     deploy:
@@ -52,9 +51,6 @@ services:
     restart: unless-stopped
     networks:
       - platform
-
-volumes:
-  crawl4ai-data:
 
 networks:
   platform:
