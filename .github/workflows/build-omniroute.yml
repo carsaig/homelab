@@ -14,7 +14,7 @@ on:
       - ".github/workflows/build-omniroute.yml"
 
 env:
-  OMNIROUTE_REF: release/v3.8.49
+  OMNIROUTE_REF: release/v3.8.50
 
 concurrency:
   group: build-omniroute
@@ -414,37 +414,7 @@ jobs:
             console.log("Patched ComboControlCenterClient.tsx");
           }
 
-          // --- 3. EndpointPageClient.tsx ---
-          {
-            const path = "omniroute-src/src/app/(dashboard)/dashboard/endpoint/EndpointPageClient.tsx";
-            let content = readFileSync(path, "utf8");
 
-            const importAnchor = 'import { getProviderDisplayName } from "@/lib/display/names";';
-            assertOneMatch(path, "getProviderDisplayName import", content, importAnchor);
-            content = content.replace(
-              importAnchor,
-              importAnchor + '\nimport { useProviderNodeMap } from "@/lib/display/useProviderNodeMap";'
-            );
-
-            const fnAnchor =
-              '  const t = useTranslations("endpoint");\n  const grouped = useMemo(() => {';
-            assertOneMatch(path, "EndpointSection body start", content, fnAnchor);
-            content = content.replace(
-              fnAnchor,
-              '  const t = useTranslations("endpoint");\n  const nodeMap = useProviderNodeMap();\n  const grouped = useMemo(() => {'
-            );
-
-            const nameAnchor =
-              '  const providerName = (id) => getProviderDisplayName(id, resolveProvider(id));';
-            assertOneMatch(path, "providerName resolver", content, nameAnchor);
-            content = content.replace(
-              nameAnchor,
-              '  const providerName = (id) => getProviderDisplayName(id, nodeMap.get(id) ?? resolveProvider(id));'
-            );
-
-            writeFileSync(path, content);
-            console.log("Patched EndpointPageClient.tsx");
-          }
           NODEEOF
 
           node /tmp/patch-provider-display-names.mjs
@@ -452,7 +422,6 @@ jobs:
           echo "--- Verifying patched files ---"
           grep -n 'resolveProviderName\|useProviderNodeMap' "omniroute-src/src/app/(dashboard)/dashboard/health/ProviderHealthMatrixCard.tsx"
           grep -n 'resolveProviderName\|useProviderNodeMap' "omniroute-src/src/app/(dashboard)/dashboard/combos/ComboControlCenterClient.tsx"
-          grep -n 'useProviderNodeMap\|nodeMap.get' "omniroute-src/src/app/(dashboard)/dashboard/endpoint/EndpointPageClient.tsx"
 
       - name: Resolve provider prefix in Combo Health's per-model usage-skew cards
         # Follow-up to the previous step, found by the user after that fix went
