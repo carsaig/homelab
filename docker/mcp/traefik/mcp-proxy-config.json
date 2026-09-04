@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "traefik": {
+      "command": "/opt/venv/bin/python",
+      "args": ["-m", "traefik_mcp.server"]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+	auto_https off
+}
+
+:8080 {
+	handle /health {
+		respond 200
+	}
+
+	@bearer header Authorization "Bearer {$MCP_PROXY_BEARER_TOKEN}"
+
+	handle @bearer {
+		rewrite * /servers/traefik/mcp
+		reverse_proxy 127.0.0.1:9090
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}
