@@ -1,0 +1,100 @@
+name: Mirror n8n-mcp image
+
+# Upstream (czlonkowski/n8n-mcp) veroeffentlicht nur :latest, :main und
+# :main-<sha> — keinen Semver-Tag. Ein Update-Check, der Versionen vergleicht,
+# hat damit nichts in der Hand.
+#
+# Dieser Workflow baut nichts. Er liest die Version aus dem Label
+# org.opencontainers.image.version des Upstream-Images und spiegelt den
+# Manifest-Index unveraendert unter einem echten Versions-Tag.
+#
+# imagetools create kopiert den kompletten Multi-Arch-Index, es wird also
+# nichts neu gebaut und keine Architektur verloren.
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Auch spiegeln, wenn der Versions-Tag schon existiert"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-n8n-mcp.yml"
+
+concurrency:
+  group: build-n8n-mcp
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  UPSTREAM: ghcr.io/czlonkowski/n8n-mcp:latest
+
+jobs:
+  mirror:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upstream-Version aus dem Image-Label lesen
+        id: version
+        run: |
+          set -euo pipefail
+          docker pull -q "${UPSTREAM}"
+          version=$(docker inspect "${UPSTREAM}" \
+            --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')
+          # Muss auf das Muster passen, das die Update-Erkennung akzeptiert:
+          # v?MAJOR.MINOR.PATCH
+          if ! printf '%s' "${version}" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Upstream-Label ist kein Semver: '${version}'"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Upstream meldet Version ${version}"
+
+      - name: Pruefen, ob der Versions-Tag schon existiert
+        id: exists
+        run: |
+          set -euo pipefail
+          target="ghcr.io/${{ github.repository_owner }}/n8n-mcp:${{ steps.version.outputs.version }}"
+          if docker manifest inspect "${target}" >/dev/null 2>&1; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+            echo "${target} ist bereits veroeffentlicht."
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+            echo "${target} fehlt noch."
+          fi
+
+      - name: Manifest-Index spiegeln
+        if: steps.exists.outputs.hit == 'false' || inputs.force
+        run: |
+          set -euo pipefail
+          owner="${{ github.repository_owner }}"
+          version="${{ steps.version.outputs.version }}"
+          docker buildx imagetools create \
+            --tag "ghcr.io/${owner}/n8n-mcp:${version}" \
+            --tag "ghcr.io/${owner}/n8n-mcp:latest" \
+            "${UPSTREAM}"
+          echo "Gespiegelt als ${version} und latest."
+
+      - name: Zusammenfassung
+        run: |
+          {
+            echo "### n8n-mcp"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Upstream-Version | \`${{ steps.version.outputs.version }}\` |"
+            echo "| Tag existierte bereits | \`${{ steps.exists.outputs.hit }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
