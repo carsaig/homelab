@@ -3,16 +3,16 @@ services:
     image: mcp/neo4j-cypher:latest
     container_name: neo4j-mcp
     ports:
-      - ${PORTS}
+      - "${PORTS:-8000:8000}"
     environment:
-      - NEO4J_URI=${URI}
-      - NEO4J_USERNAME=${USERNAME}
+      - NEO4J_URI=${URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${USERNAME:-neo4j}
       - NEO4J_PASSWORD=${PASSWORD}
-      - NEO4J_DATABASE=${DATABASE}
-      - NEO4J_TRANSPORT=${TRANSPORT}
-      - NEO4J_MCP_SERVER_HOST=${MCP_SERVER_HOST}
-      - NEO4J_MCP_SERVER_PORT=${MCP_SERVER_PORT}
-      - NEO4J_MCP_SERVER_ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - NEO4J_DATABASE=${DATABASE:-neo4j}
+      - NEO4J_TRANSPORT=${TRANSPORT:-sse}
+      - NEO4J_MCP_SERVER_HOST=${MCP_SERVER_HOST:-0.0.0.0}
+      - NEO4J_MCP_SERVER_PORT=${MCP_SERVER_PORT:-8000}
+      - NEO4J_MCP_SERVER_ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
     deploy:
       resources:
         limits:
@@ -26,4 +26,4 @@ services:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK}
+    name: ${PLATFORM_NETWORK:-dokploy-network}
