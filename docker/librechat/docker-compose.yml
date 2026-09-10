@@ -5,6 +5,7 @@ services:
     depends_on:
       - mongodb
       - redis
+      - meilisearch
     extra_hosts:
       - ${DOCKER_HOST}
       - ${OIDC_HOST}
@@ -15,6 +16,9 @@ services:
       - PORT=${HOST_PORT}
       - MONGO_URI=${MONGO_URI}
       - REDIS_URL=${REDIS_URL}
+      - SEARCH=true
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - RAG_API_URL=${RAG_API_URL}
       - CREDS_KEY=${CREDS_KEY}
       - CREDS_IV=${CREDS_IV}
@@ -30,6 +34,46 @@ services:
     networks:
       - default
       - platform
+
+  admin-panel:
+    image: ghcr.io/clickhouse/librechat-admin-panel:latest@sha256:a395465d1daa3c11495810a8c224df86675985d50de42e98e36eeedbd8aecb94
+    restart: always
+    depends_on:
+      - api
+    environment:
+      - API_SERVER_URL=http://api:${HOST_PORT}
+      - DOMAIN_CLIENT=${DOMAIN_CLIENT}
+      - DOMAIN_SERVER=${DOMAIN_SERVER}
+      - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
+      - ADMIN_PANEL_SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
+      - ADMIN_SSO_ONLY=${ADMIN_SSO_ONLY:-true}
+      - ADMIN_SESSION_IDLE_TIMEOUT_MS=${ADMIN_SESSION_IDLE_TIMEOUT_MS:-1800000}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PLATFORM_NETWORK}"
+      - "traefik.http.routers.librechat-admin-http.entrypoints=web"
+      - "traefik.http.routers.librechat-admin-http.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.librechat-admin-https.entrypoints=websecure"
+      - "traefik.http.routers.librechat-admin-https.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-https.tls=true"
+      - "traefik.http.routers.librechat-admin-https.tls.certresolver=letsencrypt-dns"
+      - "traefik.http.services.librechat-admin.loadbalancer.server.port=3000"
+    networks:
+      - default
+      - platform
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    restart: always
+    environment:
+      - MEILI_HOST=http://0.0.0.0:7700
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - default
 
   mongodb:
     image: mongo:7.0
@@ -59,7 +103,7 @@ services:
       - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER}
       - EMBEDDINGS_MODEL=${EMBEDDINGS_MODEL}
       - RAG_OPENAI_BASEURL=${LLM_GATEWAY_BASEURL}
-      - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY}
+      - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY_ADMIN}
       - CHUNK_SIZE=1500
       - CHUNK_OVERLAP=100
 
@@ -78,6 +122,7 @@ volumes:
   librechat_images:
   librechat_logs:
   pgvector_data:
+  meilisearch_data:
 
 networks:
   platform:
