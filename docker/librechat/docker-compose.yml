@@ -13,6 +13,11 @@ services:
       - PORT=${HOST_PORT:-3080}
       - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/LibreChat}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_URI=${REDIS_URI:-redis://redis:6379}
+      - USE_REDIS=${USE_REDIS:-true}
+      - USE_REDIS_STREAMS=${USE_REDIS_STREAMS:-true}
+      - SCHEDULES_SINGLE_PROCESS=${SCHEDULES_SINGLE_PROCESS:-true}
+      - TRUST_PROXY=${TRUST_PROXY:-2}
       - SEARCH=true
       - MEILI_HOST=${MEILI_HOST:-http://meilisearch:7700}
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
