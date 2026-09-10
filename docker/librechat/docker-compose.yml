@@ -99,6 +99,8 @@ services:
       - api
     environment:
       - API_SERVER_URL=http://api:${HOST_PORT:-3080}
+      - VITE_API_BASE_URL=https://${DOMAIN_HOST}
+      - VITE_BASE_PATH=/admin
       - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
       - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
       - SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
@@ -106,6 +108,8 @@ services:
       - ADMIN_PANEL_SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
       - ADMIN_SSO_ONLY=${ADMIN_SSO_ONLY:-true}
       - ADMIN_SESSION_IDLE_TIMEOUT_MS=${ADMIN_SESSION_IDLE_TIMEOUT_MS:-1800000}
+    volumes:
+      - ./admin-server.ts:/app/server.ts:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
