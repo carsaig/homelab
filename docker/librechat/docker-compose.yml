@@ -7,19 +7,16 @@ services:
       - redis
       - meilisearch
     extra_hosts:
-      - ${DOCKER_HOST}
-      - ${OIDC_HOST}
-    env_file:
-      - .env
+      - "host.docker.internal:host-gateway"
     environment:
-      - HOST=${HOST}
-      - PORT=${HOST_PORT}
-      - MONGO_URI=${MONGO_URI}
-      - REDIS_URL=${REDIS_URL}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${HOST_PORT:-3080}
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/LibreChat}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - SEARCH=true
       - MEILI_HOST=http://meilisearch:7700
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
-      - RAG_API_URL=${RAG_API_URL}
+      - RAG_API_URL=${RAG_API_URL:-http://rag-api:8000}
       - CREDS_KEY=${CREDS_KEY}
       - CREDS_IV=${CREDS_IV}
     entrypoint: ["/bin/sh", "/patches/entrypoint-patch.sh"]
@@ -30,7 +27,7 @@ services:
       - librechat_images:/app/client/public/images
       - librechat_logs:/app/api/logs
     labels:
-      - "${LIBRECHAT_MIDDLEWARE_LABEL}"
+      - "${LIBRECHAT_MIDDLEWARE_LABEL:-traefik.enable=true}"
     networks:
       - default
       - platform
@@ -41,7 +38,7 @@ services:
     depends_on:
       - api
     environment:
-      - API_SERVER_URL=http://api:${HOST_PORT}
+      - API_SERVER_URL=http://api:${HOST_PORT:-3080}
       - DOMAIN_CLIENT=${DOMAIN_CLIENT}
       - DOMAIN_SERVER=${DOMAIN_SERVER}
       - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
@@ -50,7 +47,7 @@ services:
       - ADMIN_SESSION_IDLE_TIMEOUT_MS=${ADMIN_SESSION_IDLE_TIMEOUT_MS:-1800000}
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${PLATFORM_NETWORK}"
+      - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
       - "traefik.http.routers.librechat-admin-http.entrypoints=web"
       - "traefik.http.routers.librechat-admin-http.rule=Host(`${ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-http.middlewares=redirect-to-https"
@@ -90,18 +87,16 @@ services:
     restart: always
     depends_on:
       - vectordb
-    env_file:
-      - .env
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
+      - DB_HOST=${DB_HOST:-vectordb}
+      - DB_PORT=${DB_PORT:-5432}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - RAG_PORT=${RAG_PORT}
+      - POSTGRES_DB=${POSTGRES_DB:-librechat}
+      - RAG_PORT=${RAG_PORT:-8000}
       - COLLECTION_NAME=librechat
-      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER}
-      - EMBEDDINGS_MODEL=${EMBEDDINGS_MODEL}
+      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER:-openai}
+      - EMBEDDINGS_MODEL=${EMBEDDINGS_MODEL:-text-embedding-3-small}
       - RAG_OPENAI_BASEURL=${LLM_GATEWAY_BASEURL}
       - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY_ADMIN}
       - CHUNK_SIZE=1500
@@ -111,7 +106,7 @@ services:
     image: pgvector/pgvector:0.8.0-pg17
     restart: always
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${POSTGRES_DB:-librechat}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
@@ -127,4 +122,4 @@ volumes:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK}
+    name: ${PLATFORM_NETWORK:-dokploy-network}
