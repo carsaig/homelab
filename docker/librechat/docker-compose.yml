@@ -70,7 +70,17 @@ services:
       - librechat_images:/app/client/public/images
       - librechat_logs:/app/api/logs
     labels:
-      - "${LIBRECHAT_MIDDLEWARE_LABEL:-traefik.enable=true}"
+      - "traefik.enable=true"
+      - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
+      - "traefik.http.routers.librechat-web.entrypoints=web"
+      - "traefik.http.routers.librechat-web.rule=Host(`${DOMAIN_HOST}`)"
+      - "traefik.http.routers.librechat-web.service=librechat-service"
+      - "traefik.http.routers.librechat-websecure.entrypoints=websecure"
+      - "traefik.http.routers.librechat-websecure.rule=Host(`${DOMAIN_HOST}`)"
+      - "traefik.http.routers.librechat-websecure.service=librechat-service"
+      - "traefik.http.routers.librechat-websecure.tls=true"
+      - "traefik.http.routers.librechat-websecure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.librechat-service.loadbalancer.server.port=3080"
     networks:
       - default
       - platform
@@ -84,24 +94,25 @@ services:
       - API_SERVER_URL=http://api:${HOST_PORT:-3080}
       - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
       - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
-      - SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET:-a7706e4d304b413a6db741e260aaa640f467305c9f17ae127abc98717761fbc9}
-      - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET:-a7706e4d304b413a6db741e260aaa640f467305c9f17ae127abc98717761fbc9}
+      - SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
+      - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
       - ADMIN_SSO_ONLY=${ADMIN_SSO_ONLY:-true}
       - ADMIN_SESSION_IDLE_TIMEOUT_MS=${ADMIN_SESSION_IDLE_TIMEOUT_MS:-1800000}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
-      - "traefik.http.routers.librechat-admin-http.entrypoints=web"
-      - "traefik.http.routers.librechat-admin-http.rule=Host(`${DOMAIN_HOST:-localhost}`) && PathPrefix(`/admin`)"
-      - "traefik.http.routers.librechat-admin-http.priority=100"
-      - "traefik.http.routers.librechat-admin-http.middlewares=redirect-to-https"
-      - "traefik.http.routers.librechat-admin-https.entrypoints=websecure"
-      - "traefik.http.routers.librechat-admin-https.rule=Host(`${DOMAIN_HOST:-localhost}`) && PathPrefix(`/admin`)"
-      - "traefik.http.routers.librechat-admin-https.priority=100"
-      - "traefik.http.routers.librechat-admin-https.tls=true"
-      - "traefik.http.routers.librechat-admin-https.tls.certresolver=letsencrypt-dns"
-      - "traefik.http.services.librechat-admin.loadbalancer.server.port=3000"
+      - "traefik.http.routers.librechat-admin-web.entrypoints=web"
+      - "traefik.http.routers.librechat-admin-web.rule=Host(`${DOMAIN_HOST}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.librechat-admin-web.priority=200"
+      - "traefik.http.routers.librechat-admin-web.service=librechat-admin-service"
+      - "traefik.http.routers.librechat-admin-websecure.entrypoints=websecure"
+      - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${DOMAIN_HOST}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.librechat-admin-websecure.priority=200"
+      - "traefik.http.routers.librechat-admin-websecure.service=librechat-admin-service"
+      - "traefik.http.routers.librechat-admin-websecure.tls=true"
+      - "traefik.http.routers.librechat-admin-websecure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.librechat-admin-service.loadbalancer.server.port=3000"
     networks:
       - default
       - platform
