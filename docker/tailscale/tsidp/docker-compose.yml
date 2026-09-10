@@ -15,7 +15,7 @@ services:
       - TSIDP_LOG=debug
       - TSIDP_ENABLE_STS=1
       - TSIDP_USE_FUNNEL=1
-      - HOSTNAME=idp
+      - TS_HOSTNAME=idp
       - VOLUME_TSIDP=tsidp-data
 
 volumes:
