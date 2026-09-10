@@ -44,10 +44,15 @@ if (fs.existsSync(socialLoginsPath)) {
   console.log("[entrypoint-patch] socialLogins.js patched cleanly");
 }
 
-// 3. Write deterministic, patched openid-client passport.js with debug logs
+// 3. Write deterministic, resilient openid-client passport.js with distributed state fallback
 const passportPath = "/app/api/node_modules/openid-client/build/passport.js";
 if (fs.existsSync(passportPath)) {
   const passportContent = `import * as client from './index.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { standardCache } = require('@librechat/api');
+const openIdStateCache = standardCache('openid_state', 600000);
+
 export class Strategy {
     name;
     _config;
@@ -135,12 +140,19 @@ export class Strategy {
             if ((max_age = redirectTo.searchParams.get('max_age'))) {
                 stateData.max_age = parseInt(max_age, 10);
             }
-            ;
-            req.session[sessionKey] = stateData;
-            if (req.session && typeof req.session.save === 'function') {
-                await new Promise((res) => req.session.save(res));
+            if (req.session) {
+                req.session[sessionKey] = stateData;
+                if (typeof req.session.save === 'function') {
+                    await new Promise((res) => req.session.save(res));
+                }
             }
-            console.log('[DEBUG-OAUTH] authorizationRequest saved sessionID:', req.sessionID, 'sessionKey:', sessionKey, 'state:', stateData.state);
+            if (stateData.state) {
+                try {
+                    await openIdStateCache.set(stateData.state, stateData);
+                } catch (e) {
+                    console.error('[OpenID] Error caching state:', e);
+                }
+            }
             if (this._useJAR) {
                 let key;
                 let modifyAssertion;
@@ -165,10 +177,19 @@ export class Strategy {
     async authorizationCodeGrant(req, currentUrl, options) {
         try {
             const sessionKey = this._sessionKey;
-            console.log('[DEBUG-OAUTH] authorizationCodeGrant sessionID:', req.sessionID, 'cookieHeader:', req.headers.cookie, 'sessionKeys:', Object.keys(req.session || {}));
-            const stateData = req.session?.[sessionKey];
+            const stateParam = currentUrl.searchParams.get('state');
+            let stateData = req.session?.[sessionKey];
+            if (!stateData && stateParam) {
+                try {
+                    stateData = await openIdStateCache.get(stateParam);
+                    if (stateData) {
+                        await openIdStateCache.delete(stateParam);
+                    }
+                } catch (e) {
+                    console.error('[OpenID] Error reading state from cache:', e);
+                }
+            }
             if (!stateData?.code_verifier) {
-                console.log('[DEBUG-OAUTH] FAIL: stateData missing. session[sessionKey] is undefined. req.session is:', req.session);
                 return this.fail({
                     message: 'Unable to verify authorization request state',
                 });
@@ -220,9 +241,6 @@ export class Strategy {
         return new URL(\`\${req.protocol}://\${req.host}\${req.originalUrl ?? req.url}\`);
     }
     authenticate(req, options) {
-        if (!req.session) {
-            return this.error(new Error('OAuth 2.0 authentication requires session support. Did you forget to use express-session middleware?'));
-        }
         const currentUrl = this.currentUrl(req);
         if ((req.method === 'GET' && currentUrl.searchParams.size === 0) ||
             (currentUrl.searchParams.size === 1 && currentUrl.searchParams.has('iss'))) {
@@ -236,7 +254,7 @@ export class Strategy {
 //# sourceMappingURL=passport.js.map\n`;
 
   fs.writeFileSync(passportPath, passportContent, "utf8");
-  console.log("[entrypoint-patch] deterministic passport.js with debug logs written");
+  console.log("[entrypoint-patch] deterministic passport.js with state fallback written");
 }
 
 // 4. Patch loginLimiter.js default max
