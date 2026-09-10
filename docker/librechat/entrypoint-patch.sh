@@ -44,7 +44,7 @@ if (fs.existsSync(socialLoginsPath)) {
   console.log("[entrypoint-patch] socialLogins.js patched cleanly");
 }
 
-// 3. Write deterministic, patched openid-client passport.js
+// 3. Write deterministic, patched openid-client passport.js with debug logs
 const passportPath = "/app/api/node_modules/openid-client/build/passport.js";
 if (fs.existsSync(passportPath)) {
   const passportContent = `import * as client from './index.js';
@@ -140,6 +140,7 @@ export class Strategy {
             if (req.session && typeof req.session.save === 'function') {
                 await new Promise((res) => req.session.save(res));
             }
+            console.log('[DEBUG-OAUTH] authorizationRequest saved sessionID:', req.sessionID, 'sessionKey:', sessionKey, 'state:', stateData.state);
             if (this._useJAR) {
                 let key;
                 let modifyAssertion;
@@ -164,8 +165,10 @@ export class Strategy {
     async authorizationCodeGrant(req, currentUrl, options) {
         try {
             const sessionKey = this._sessionKey;
+            console.log('[DEBUG-OAUTH] authorizationCodeGrant sessionID:', req.sessionID, 'cookieHeader:', req.headers.cookie, 'sessionKeys:', Object.keys(req.session || {}));
             const stateData = req.session?.[sessionKey];
             if (!stateData?.code_verifier) {
+                console.log('[DEBUG-OAUTH] FAIL: stateData missing. session[sessionKey] is undefined. req.session is:', req.session);
                 return this.fail({
                     message: 'Unable to verify authorization request state',
                 });
@@ -233,7 +236,7 @@ export class Strategy {
 //# sourceMappingURL=passport.js.map\n`;
 
   fs.writeFileSync(passportPath, passportContent, "utf8");
-  console.log("[entrypoint-patch] deterministic passport.js written");
+  console.log("[entrypoint-patch] deterministic passport.js with debug logs written");
 }
 
 // 4. Patch loginLimiter.js default max
