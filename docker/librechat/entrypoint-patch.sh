@@ -235,6 +235,18 @@ export class Strategy {
   fs.writeFileSync(passportPath, passportContent, "utf8");
   console.log("[entrypoint-patch] deterministic passport.js written");
 }
+
+// 4. Patch loginLimiter.js default max
+const limiterPath = "/app/api/server/middleware/limiters/loginLimiter.js";
+if (fs.existsSync(limiterPath)) {
+  let content = fs.readFileSync(limiterPath, "utf8");
+  content = content.replace(
+    "const { LOGIN_WINDOW = 5, LOGIN_MAX = 7, LOGIN_VIOLATION_SCORE: score } = process.env;",
+    "const { LOGIN_WINDOW = 1, LOGIN_MAX = 1000, LOGIN_VIOLATION_SCORE: score } = process.env;"
+  );
+  fs.writeFileSync(limiterPath, content, "utf8");
+  console.log("[entrypoint-patch] loginLimiter.js patched cleanly");
+}
 NODE_PATCH
 
 exec "$@"
