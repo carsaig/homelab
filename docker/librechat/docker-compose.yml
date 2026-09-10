@@ -14,53 +14,53 @@ services:
       - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/LibreChat}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - SEARCH=true
-      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_HOST=${MEILI_HOST:-http://meilisearch:7700}
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
       - RAG_API_URL=${RAG_API_URL:-http://rag-api:8000}
       - CREDS_KEY=${CREDS_KEY}
       - CREDS_IV=${CREDS_IV}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - DOMAIN_CLIENT=${DOMAIN_CLIENT}
-      - DOMAIN_SERVER=${DOMAIN_SERVER}
+      - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
+      - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
       - APP_TITLE=${APP_TITLE:-LibreChat}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-true}
       - ALLOW_EMAIL_LOGIN=${ALLOW_EMAIL_LOGIN:-true}
       - ALLOW_SOCIAL_LOGIN=${ALLOW_SOCIAL_LOGIN:-true}
       - ALLOW_SOCIAL_REGISTRATION=${ALLOW_SOCIAL_REGISTRATION:-true}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
-      - OPENID_CLIENT_ID=${OPENID_CLIENT_ID}
-      - OPENID_CLIENT_SECRET=${OPENID_CLIENT_SECRET}
-      - OPENID_ISSUER=${OPENID_ISSUER}
-      - OPENID_SESSION_SECRET=${OPENID_SESSION_SECRET}
-      - OPENID_CALLBACK_URL=${OPENID_CALLBACK_URL}
-      - OPENID_SCOPE=${OPENID_SCOPE}
-      - OPENID_BUTTON_LABEL=${OPENID_BUTTON_LABEL}
-      - OPENID_IMAGE_URL=${OPENID_IMAGE_URL}
-      - OPENID_GENERATE_NONCE=${OPENID_GENERATE_NONCE}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-}
+      - OPENID_CLIENT_ID=${OPENID_CLIENT_ID:-}
+      - OPENID_CLIENT_SECRET=${OPENID_CLIENT_SECRET:-}
+      - OPENID_ISSUER=${OPENID_ISSUER:-}
+      - OPENID_SESSION_SECRET=${OPENID_SESSION_SECRET:-}
+      - OPENID_CALLBACK_URL=${OPENID_CALLBACK_URL:-}
+      - OPENID_SCOPE=${OPENID_SCOPE:-}
+      - OPENID_BUTTON_LABEL=${OPENID_BUTTON_LABEL:-}
+      - OPENID_IMAGE_URL=${OPENID_IMAGE_URL:-}
+      - OPENID_GENERATE_NONCE=${OPENID_GENERATE_NONCE:-}
       - LLM_GATEWAY_NAME=${LLM_GATEWAY_NAME:-Omniroute}
-      - LLM_GATEWAY_BASEURL=${LLM_GATEWAY_BASEURL}
-      - LLM_GATEWAY_AUTH=${LLM_GATEWAY_AUTH}
-      - LLM_GATEWAY_API_KEY_ADMIN=${LLM_GATEWAY_API_KEY_ADMIN}
+      - LLM_GATEWAY_BASEURL=${LLM_GATEWAY_BASEURL:-http://omniroute:8000/v1}
+      - LLM_GATEWAY_AUTH=${LLM_GATEWAY_AUTH:-}
+      - LLM_GATEWAY_API_KEY_ADMIN=${LLM_GATEWAY_API_KEY_ADMIN:-}
       - LLM_MODEL=${LLM_MODEL:-gpt-5.6-sol}
       - LLM_PROVIDER=${LLM_PROVIDER:-openAI}
       - MODEL_DISPLAY_LABEL=${MODEL_DISPLAY_LABEL:-Omniroute}
-      - MCP_URL=${MCP_URL}
-      - MCP_GATEWAY_AUTH=${MCP_GATEWAY_AUTH}
-      - MCP_GATEWAY_API_KEY_ADMIN=${MCP_GATEWAY_API_KEY_ADMIN}
-      - SEARXNG_INSTANCE_URL=${SEARXNG_INSTANCE_URL}
-      - SEARXNG_API_KEY=${SEARXNG_API_KEY}
-      - TAVILY_API_KEY=${TAVILY_API_KEY}
-      - JINA_API_KEY=${JINA_API_KEY}
-      - COHERE_API_KEY=${COHERE_API_KEY}
-      - SUMMARY_MODEL=${SUMMARY_MODEL}
-      - SUPERMEMORY_API_KEY=${SUPERMEMORY_API_KEY}
-      - DEBUG_CONSOLE=${DEBUG_CONSOLE}
-      - ENABLE_STATIC_ASSET_BROTLI=${ENABLE_STATIC_ASSET_BROTLI}
-      - ENABLE_IMAGE_OUTPUT_GZIP_SCAN=${ENABLE_IMAGE_OUTPUT_GZIP_SCAN}
-      - DISABLE_COMPRESSION=${DISABLE_COMPRESSION}
+      - MCP_URL=${MCP_URL:-http://bifrost:8080/mcp}
+      - MCP_GATEWAY_AUTH=${MCP_GATEWAY_AUTH:-}
+      - MCP_GATEWAY_API_KEY_ADMIN=${MCP_GATEWAY_API_KEY_ADMIN:-}
+      - SEARXNG_INSTANCE_URL=${SEARXNG_INSTANCE_URL:-http://searxng:8080}
+      - SEARXNG_API_KEY=${SEARXNG_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - JINA_API_KEY=${JINA_API_KEY:-}
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
+      - SUMMARY_MODEL=${SUMMARY_MODEL:-gpt-5.4-mini}
+      - SUPERMEMORY_API_KEY=${SUPERMEMORY_API_KEY:-}
+      - DEBUG_CONSOLE=${DEBUG_CONSOLE:-false}
+      - ENABLE_STATIC_ASSET_BROTLI=${ENABLE_STATIC_ASSET_BROTLI:-true}
+      - ENABLE_IMAGE_OUTPUT_GZIP_SCAN=${ENABLE_IMAGE_OUTPUT_GZIP_SCAN:-true}
+      - DISABLE_COMPRESSION=${DISABLE_COMPRESSION:-false}
       - NODE_ENV=${NODE_ENV:-production}
     entrypoint: ["/bin/sh", "/patches/entrypoint-patch.sh"]
     command: ["npm", "run", "backend"]
@@ -82,8 +82,8 @@ services:
       - api
     environment:
       - API_SERVER_URL=http://api:${HOST_PORT:-3080}
-      - DOMAIN_CLIENT=${DOMAIN_CLIENT}
-      - DOMAIN_SERVER=${DOMAIN_SERVER}
+      - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
+      - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
       - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
       - ADMIN_SSO_ONLY=${ADMIN_SSO_ONLY:-true}
@@ -92,10 +92,12 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
       - "traefik.http.routers.librechat-admin-http.entrypoints=web"
-      - "traefik.http.routers.librechat-admin-http.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-http.rule=Host(`${DOMAIN_HOST:-localhost}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.librechat-admin-http.priority=100"
       - "traefik.http.routers.librechat-admin-http.middlewares=redirect-to-https"
       - "traefik.http.routers.librechat-admin-https.entrypoints=websecure"
-      - "traefik.http.routers.librechat-admin-https.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-https.rule=Host(`${DOMAIN_HOST:-localhost}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.librechat-admin-https.priority=100"
       - "traefik.http.routers.librechat-admin-https.tls=true"
       - "traefik.http.routers.librechat-admin-https.tls.certresolver=letsencrypt-dns"
       - "traefik.http.services.librechat-admin.loadbalancer.server.port=3000"
@@ -133,15 +135,15 @@ services:
     environment:
       - DB_HOST=${DB_HOST:-vectordb}
       - DB_PORT=${DB_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER:-librechat}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
       - POSTGRES_DB=${POSTGRES_DB:-librechat}
       - RAG_PORT=${RAG_PORT:-8000}
       - COLLECTION_NAME=librechat
       - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER:-openai}
       - EMBEDDINGS_MODEL=${EMBEDDINGS_MODEL:-text-embedding-3-small}
-      - RAG_OPENAI_BASEURL=${LLM_GATEWAY_BASEURL}
-      - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY_ADMIN}
+      - RAG_OPENAI_BASEURL=${LLM_GATEWAY_BASEURL:-http://omniroute:8000/v1}
+      - RAG_OPENAI_API_KEY=${LLM_GATEWAY_API_KEY_ADMIN:-}
       - CHUNK_SIZE=1500
       - CHUNK_OVERLAP=100
 
@@ -150,8 +152,8 @@ services:
     restart: always
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-librechat}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER:-librechat}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
     volumes:
       - pgvector_data:/var/lib/postgresql/data
 
