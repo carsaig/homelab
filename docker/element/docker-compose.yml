@@ -1,5 +1,6 @@
 services:
   element:
+    container_name: element-web
     image: vectorim/element-web@sha256:74b2e97b799c78fcc622141f13981da4f42188d0f85dc16e436cf29c751abf4a
     restart: unless-stopped
     configs:
