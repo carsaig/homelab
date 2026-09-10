@@ -60,16 +60,16 @@ registration:
 
 endpoints:
   custom:
-    - name: "${LLM_GATEWAY_NAME:-Omniroute}"
+    - name: "${LLM_GATEWAY_NAME}"
       apiKey: "${LLM_GATEWAY_API_KEY_ADMIN}"
       baseURL: "${LLM_GATEWAY_BASEURL}"
       models:
         default:
-          - "${LLM_MODEL:-gpt-5.6-sol}"
+          - "${LLM_MODEL}"
         fetch: true
       titleConvo: true
-      titleModel: "${LLM_MODEL:-gpt-5.6-sol}"
-      modelDisplayLabel: "${MODEL_DISPLAY_LABEL:-Omniroute}"
+      titleModel: "${LLM_MODEL}"
+      modelDisplayLabel: "${MODEL_DISPLAY_LABEL}"
 
 memory:
   disabled: false
@@ -104,8 +104,8 @@ memory:
     When in doubt, store it — it is better to remember too much than too little.
   agent:
     enabled: true
-    provider: "${LLM_PROVIDER:-openAI}"
-    model: "${LLM_MODEL:-gpt-5.6-sol}"
+    provider: "${LLM_PROVIDER}"
+    model: "${LLM_MODEL}"
     model_parameters:
       temperature: 0.2
       max_tokens: 2000
@@ -149,7 +149,7 @@ messageFilter:
 
 summarization:
   provider: 'openAI'
-  model: "${SUMMARY_MODEL:-gpt-5.4-mini}"
+  model: "${SUMMARY_MODEL}"
   maxSummaryTokens: 4096
   reserveRatio: 0.05
   trigger:
