@@ -6,7 +6,7 @@ services:
     expose:
       - 3000
     volumes:
-      - ../files/homepage-config:/app/config
-      - ../files/homepage-icons:/app/public/icons
+      - ${HOMEPAGE_CONFIG_DIR}:/app/config
+      - ${HOMEPAGE_ICONS_DIR}:/app/public/icons
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS}
