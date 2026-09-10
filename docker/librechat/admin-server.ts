@@ -103,8 +103,8 @@ async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Pro
           let body: any = file;
           if (path.endsWith('.js')) {
             let code = await file.text();
-            if (code.includes('"/assets/')) {
-              code = code.replaceAll('"/assets/', `${BASE_PATH}/assets/`);
+            if (code.includes('/assets/')) {
+              code = code.replaceAll('/admin/assets/', '/assets/').replaceAll('/assets/', `${BASE_PATH}/assets/`);
               body = code;
             }
           }
@@ -123,14 +123,12 @@ const server = Bun.serve({
     ...(await buildStaticRoutes()),
     '/metrics': (req) => metricsResponse(req),
     '/health': () => new Response('ok'),
-    ...(BASE_PATH ? { [`${BASE_PATH}`]: () => Response.redirect(`${BASE_PATH}/`, 302) } : {}),
     '/*': async (req) => {
       const url = new URL(req.url);
       const metricsPath = BASE_PATH && url.pathname.startsWith(BASE_PATH)
         ? url.pathname.slice(BASE_PATH.length) || '/'
         : url.pathname;
 
-      // Pass clean request path to TanStack Start router
       let routerUrl = url;
       if (BASE_PATH && url.pathname.startsWith(BASE_PATH)) {
         const subPath = url.pathname.slice(BASE_PATH.length) || '/';
@@ -144,12 +142,11 @@ const server = Bun.serve({
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('text/html')) {
         let text = await res.text();
-        text = text.replaceAll('"/assets/', `"${BASE_PATH}/assets/`);
-        text = text.replaceAll('href="/assets/', `href="${BASE_PATH}/assets/`);
-        text = text.replaceAll('href="/favicon.ico"', `href="${BASE_PATH}/favicon.ico"`);
-        text = text.replaceAll('href="/manifest.json"', `href="${BASE_PATH}/manifest.json"`);
-        text = text.replaceAll('href="/librechat-logo.svg"', `href="${BASE_PATH}/librechat-logo.svg"`);
-        text = text.replaceAll('href="/styles-', `href="${BASE_PATH}/assets/styles-`);
+        text = text.replaceAll('/admin/assets/', '/assets/').replaceAll('/assets/', `${BASE_PATH}/assets/`);
+        text = text.replaceAll('/admin/favicon.ico', '/favicon.ico').replaceAll('/favicon.ico', `${BASE_PATH}/favicon.ico`);
+        text = text.replaceAll('/admin/manifest.json', '/manifest.json').replaceAll('/manifest.json', `${BASE_PATH}/manifest.json`);
+        text = text.replaceAll('/admin/librechat-logo.svg', '/librechat-logo.svg').replaceAll('/librechat-logo.svg', `${BASE_PATH}/librechat-logo.svg`);
+        text = text.replaceAll('/styles-', `${BASE_PATH}/assets/styles-`);
         body = text;
       }
 
