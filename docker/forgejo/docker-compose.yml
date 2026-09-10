@@ -1,5 +1,6 @@
 services:
   forgejo:
+    container_name: forgejo
     image: ${FORGEJO_IMAGE}
     restart: unless-stopped
     depends_on:
@@ -78,6 +79,7 @@ services:
       start_period: 60s
 
   db:
+    container_name: forgejo-db
     image: ${POSTGRES_IMAGE}
     restart: unless-stopped
     environment:
