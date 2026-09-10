@@ -61,7 +61,7 @@ registration:
 endpoints:
   custom:
     - name: "${LLM_GATEWAY_NAME}"
-      apiKey: "${LLM_GATEWAY_API_KEY_ADMIN}"
+      apiKey: "${LLM_GATEWAY_AUTH}"
       baseURL: "${LLM_GATEWAY_BASEURL}"
       models:
         default:

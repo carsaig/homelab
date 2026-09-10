@@ -4,6 +4,17 @@ set -e
 node - << "NODE_PATCH"
 const fs = require("fs");
 
+// 0. Preprocess and substitute environment variables in /app/librechat.yaml -> /tmp/librechat.yaml
+const configYamlPath = "/app/librechat.yaml";
+if (fs.existsSync(configYamlPath)) {
+  let content = fs.readFileSync(configYamlPath, "utf8");
+  content = content.replace(/\$\{([A-Za-z0-9_]+)\}/g, (match, varName) => {
+    return process.env[varName] !== undefined ? process.env[varName] : match;
+  });
+  fs.writeFileSync("/tmp/librechat.yaml", content, "utf8");
+  console.log("[entrypoint-patch] /tmp/librechat.yaml written with substituted env vars");
+}
+
 // 1. Patch agents/chat.js (configMiddleware)
 const chatPath = "/app/api/server/routes/agents/chat.js";
 if (fs.existsSync(chatPath)) {
@@ -270,4 +281,5 @@ if (fs.existsSync(limiterPath)) {
 }
 NODE_PATCH
 
+export CONFIG_PATH="/tmp/librechat.yaml"
 exec "$@"
