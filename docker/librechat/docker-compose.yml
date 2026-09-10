@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/danny-avila/librechat:v0.8.8-rc1
+    image: ghcr.io/danny-avila/librechat:v0.8.8-rc2
     restart: always
     depends_on:
       - mongodb
@@ -16,6 +16,8 @@ services:
       - MONGO_URI=${MONGO_URI}
       - REDIS_URL=${REDIS_URL}
       - RAG_API_URL=${RAG_API_URL}
+      - CREDS_KEY=${CREDS_KEY}
+      - CREDS_IV=${CREDS_IV}
     entrypoint: ["/bin/sh", "/patches/entrypoint-patch.sh"]
     command: ["npm", "run", "backend"]
     volumes:
