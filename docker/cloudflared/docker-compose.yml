@@ -4,11 +4,11 @@ services:
       container_name: cloudflared
       command: tunnel --no-autoupdate run
       environment:
-        TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?CF_TUNNEL_TOKEN is required}
+        TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN}
       restart: unless-stopped
       networks:
         - platform
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK:?PLATFORM_NETWORK is required}
+    name: ${PLATFORM_NETWORK}
