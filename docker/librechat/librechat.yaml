@@ -60,22 +60,16 @@ registration:
 
 endpoints:
   custom:
-    - name: ${LLM_GATEWAY_NAME}
-      apiKey: ${LLM_GATEWAY_API_KEY_ADMIN}
-      baseURL: ${LLM_GATEWAY_BASEURL}
+    - name: "${LLM_GATEWAY_NAME:-Omniroute}"
+      apiKey: "${LLM_GATEWAY_API_KEY_ADMIN}"
+      baseURL: "${LLM_GATEWAY_BASEURL}"
       models:
         default:
-          - ${LLM_MODEL}
+          - "${LLM_MODEL:-gpt-5.6-sol}"
         fetch: true
       titleConvo: true
-      titleModel: ${LLM_MODEL}
-      modelDisplayLabel: ${MODEL_DISPLAY_LABEL}
-
-ocr:
-  apiKey: ${LLM_GATEWAY_API_KEY_ADMIN}
-  baseURL: ${LLM_GATEWAY_BASEURL}
-  allowedAddresses: ["ocr.internal:8080"]
-  strategy: "custom_ocr"
+      titleModel: "${LLM_MODEL:-gpt-5.6-sol}"
+      modelDisplayLabel: "${MODEL_DISPLAY_LABEL:-Omniroute}"
 
 memory:
   disabled: false
@@ -110,51 +104,37 @@ memory:
     When in doubt, store it — it is better to remember too much than too little.
   agent:
     enabled: true
-    provider: ${LLM_PROVIDER}
-    model: ${LLM_MODEL}
+    provider: "${LLM_PROVIDER:-openAI}"
+    model: "${LLM_MODEL:-gpt-5.6-sol}"
     model_parameters:
-          temperature: 0.2
-          max_tokens: 2000
-          top_p: 0.8
-          frequency_penalty: 0.1
+      temperature: 0.2
+      max_tokens: 2000
+      top_p: 0.8
+      frequency_penalty: 0.1
 
 mcpServers:
   bifrost-mcp:
     type: streamable-http
-    url: ${MCP_URL}
+    url: "${MCP_URL}"
     headers:
       Authorization: "Basic ${MCP_GATEWAY_AUTH}"
       x-bf-vk: "${MCP_GATEWAY_API_KEY_ADMIN}"
     timeout: 120000
 
 webSearch:
-  # Search Provider Configuration
+  searchProvider: "searxng"
   searxngInstanceUrl: "${SEARXNG_INSTANCE_URL}"
   searxngApiKey: "${SEARXNG_API_KEY}"
-  searchProvider: "searxng" # Options: "serper", "searxng", "tavily"
-  # Optional: query options sent to a SearXNG instance
-  allowedAddresses:
-      - "localhost:55011"
   searxngSearchOptions:
-    engines: "google,duckduckgo,brave,startpage" # Default: "google,bing,duckduckgo"
-    language: "all" # Default: "all"
+    engines: "google,duckduckgo,brave,startpage"
+    language: "all"
     timeout: 10000
-  # Tavily Configuration (search and/or scraper)
   tavilyApiKey: "${TAVILY_API_KEY}"
-  # Optional: custom Tavily-compatible endpoints
-  tavilySearchUrl: "${TAVILY_SEARCH_URL}"
-  tavilyExtractUrl: "${TAVILY_EXTRACT_URL}"
-
-# Reranker Configuration
   jinaApiKey: "${JINA_API_KEY}"
-  jinaApiUrl: "${JINA_API_URL}"
   cohereApiKey: "${COHERE_API_KEY}"
-  rerankerType: "jina" # Options: "jina", "cohere", "none"
-
-# General Settings
-  scraperTimeout: 7500 # Timeout in milliseconds for scraper requests (default: 7500)
-  safeSearch: 1 # Options: 0 (OFF), 1 (MODERATE - default), 2 (STRICT)
-  # Required for deliberately private self-hosted provider endpoints
+  rerankerType: "jina"
+  scraperTimeout: 7500
+  safeSearch: 1
 
 messageFilter:
   pii:
@@ -169,7 +149,7 @@ messageFilter:
 
 summarization:
   provider: 'openAI'
-  model: 'gpt-5.4-mini'
+  model: "${SUMMARY_MODEL:-gpt-5.4-mini}"
   maxSummaryTokens: 4096
   reserveRatio: 0.05
   trigger:
