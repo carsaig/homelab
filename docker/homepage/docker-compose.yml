@@ -1,5 +1,6 @@
 services:
   homepage:
+    container_name: homepage
     image: ghcr.io/gethomepage/homepage:v1.13.2
     restart: unless-stopped
     expose:
