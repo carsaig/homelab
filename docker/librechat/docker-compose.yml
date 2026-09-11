@@ -95,7 +95,7 @@ services:
      # - HTTPS_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
      # - NO_PROXY: Comma-separated hosts, domains, or IP ranges that supported server-side clients should bypass.
       TITLE_CONVO: true # Enable titling for all endpoints.
-      RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL:-http://rag-api:8000}
+      RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL}
       NODE_ENV: production
      # Plugins/Skills: LibreChat verweigert den Start, wenn diese Verzeichnisse
      # nicht existieren -- "Deployment plugins directory could not be read".
@@ -252,7 +252,6 @@ services:
       MODEL_DISPLAY_LABEL: Omniroute
     # MCP_URL steht oben unter 'MCP Server' und kommt aus dem Vault:
     # lokal http://bifrost:8080/mcp, alternativ der Cloudflare-Gateway.
-     # - COHERE_API_KEY: ${COHERE_API_KEY:-}
      # - GEMINI_API_KEY:
      # - GEMINI_IMAGE_MODEL:
      # - ASSISTANTS_API_KEY: OpenAI API key for Assistants API. Docs: https://www.librechat.ai/docs/configuration/pre_configured_ai/assistants
@@ -262,7 +261,8 @@ services:
       #TAVILY_SEARCH_URL:
       #TAVILY_EXTRACT_URL:
       SEARXNG_INSTANCE_URL: http://searxng:8080
-      SEARXNG_API_KEY: ${SERVICES_LIBRECHAT_SEARXNG_API_KEY:-}
+     # - SEARXNG_API_KEY: die eigene SearXNG-Instanz verlangt keinen Key.
+     #   Auch in librechat.yaml entfernt, damit nichts darauf verweist.
       # SERPER_API_KEY: # https://serper.dev/api-keys
       # KEENABLE_API_KEY: Optional Keenable API key for search and page fetch.
       # KEENABLE_API_URL: Optional custom Keenable search API URL.
@@ -547,9 +547,8 @@ services:
     depends_on:
       - vectordb
     environment:
-      # Vault-Key bewusst mit RAG_-Praefix: der Container-seitige Name DB_HOST ist
-      # von rag_api vorgegeben und nicht aenderbar, der Vault-Name ist frei waehlbar.
-      DB_HOST: ${SERVICES_LIBRECHAT_RAG_DB_HOST:-vectordb}
+      # Container-seitiger Name von rag_api vorgegeben, Vault-Name frei waehlbar.
+      DB_HOST: ${SERVICES_LIBRECHAT_RAG_DB_HOST}
       DB_PORT: 5432
       POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
       POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}

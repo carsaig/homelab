@@ -124,7 +124,6 @@ mcpServers:
 webSearch:
   searchProvider: "searxng"
   searxngInstanceUrl: "${SEARXNG_INSTANCE_URL}"
-  searxngApiKey: "${SEARXNG_API_KEY}"
   searxngSearchOptions:
     engines: "google,duckduckgo,brave,startpage"
     language: "all"
