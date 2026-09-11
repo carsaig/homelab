@@ -120,7 +120,14 @@ async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Pro
               // for the root. Keep them inside the panel's path, where its session cookie
               // applies and where the chat application does not answer instead.
               .replaceAll(`${BASE_PATH}/_serverFn/`, '/_serverFn/')
-              .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`);
+              .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`)
+              // The client router is built for the root and would otherwise write every
+              // navigation target without the mount path, sending the browser to the chat
+              // application instead of staying inside the panel.
+              .replaceAll('basepath:`/`', `basepath:\`${BASE_PATH}\``)
+              .replaceAll('basepath:``', `basepath:\`${BASE_PATH}\``)
+              .replaceAll('basepath:"/"', `basepath:"${BASE_PATH}"`)
+              .replaceAll('basepath:""', `basepath:"${BASE_PATH}"`);
             if (rewritten !== code) {
               body = rewritten;
             }
