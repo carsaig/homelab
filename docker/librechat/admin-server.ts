@@ -174,6 +174,13 @@ const NO_CACHE: Record<string, string> = {
 // serve. Marking them immutable would pin a pre-patch copy in browsers indefinitely.
 // Let them be cached and revalidated against an ETag of the patched content instead:
 // unchanged assets cost a 304 rather than a full download.
+// A previous revision served the hashed assets as immutable. Those files are rewritten
+// after the build, so a browser can hold a copy that no longer matches what we send and,
+// being immutable, will never revalidate it. Purge the origin's cache once per browser
+// and remember that we did so; afterwards normal caching applies.
+const CACHE_RESET_ID = 'v2';
+const CACHE_RESET_COOKIE = 'admin_cache_reset';
+
 const REVALIDATE: Record<string, string> = {
   'Cache-Control': 'public, max-age=60, must-revalidate',
 };
@@ -292,6 +299,16 @@ const server = Bun.serve({
       const patched = new Response(body, res);
       for (const [k, v] of Object.entries(NO_CACHE)) {
         patched.headers.set(k, v);
+      }
+      const alreadyReset = (req.headers.get('cookie') ?? '').includes(
+        `${CACHE_RESET_COOKIE}=${CACHE_RESET_ID}`,
+      );
+      if (contentType.includes('text/html') && !alreadyReset) {
+        patched.headers.set('Clear-Site-Data', '"cache"');
+        patched.headers.append(
+          'Set-Cookie',
+          `${CACHE_RESET_COOKIE}=${CACHE_RESET_ID}; Path=${BASE_PATH || '/'}; Max-Age=31536000; SameSite=Lax`,
+        );
       }
       applySecurityHeaders(patched.headers);
       return patched;
