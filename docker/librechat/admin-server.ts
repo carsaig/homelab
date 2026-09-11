@@ -63,6 +63,16 @@ function patchDistFiles() {
           changed = true;
         }
 
+        // server.js gets SERVER_FN_BASE rewritten above, but the client bundles keep
+        // their own hardcoded /_serverFn/ prefix. Without this the browser calls the
+        // root application instead of the panel and every loader comes back empty.
+        if (code.includes('/_serverFn/')) {
+          code = code
+            .replaceAll(`${BASE_PATH}/_serverFn/`, '/_serverFn/')
+            .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`);
+          changed = true;
+        }
+
         // Relative Vite mapDeps in client files
         if (code.includes('"assets/')) {
           code = code.replaceAll('"assets/', `"${BASE_PATH}/assets/`);
@@ -149,16 +159,19 @@ const NO_CACHE: Record<string, string> = {
   Expires: '0',
 };
 
-const IMMUTABLE: Record<string, string> = {
-  'Cache-Control': 'public, max-age=31536000, immutable',
+// Build output under assets/ is content-hashed, but patchDistFiles() rewrites those
+// files in place afterwards, so the hash in the name no longer describes the bytes we
+// serve. Marking them immutable would pin a pre-patch copy in browsers indefinitely.
+// Let them be cached and revalidated against an ETag of the patched content instead:
+// unchanged assets cost a 304 rather than a full download.
+const REVALIDATE: Record<string, string> = {
+  'Cache-Control': 'public, max-age=60, must-revalidate',
 };
 
-// Build output under assets/ is content-hashed (e.g. main-DtwN7LRi.js), so a changed
-// file always arrives under a new name and the old one can be cached indefinitely.
 const HASHED_ASSET = /(?:^|\/)assets\/.+-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/;
 
 function getCacheHeaders(filePath: string): Record<string, string> {
-  return HASHED_ASSET.test(filePath) ? IMMUTABLE : NO_CACHE;
+  return HASHED_ASSET.test(filePath) ? REVALIDATE : NO_CACHE;
 }
 
 const CSP_VALUE = [
@@ -208,11 +221,19 @@ async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Pro
   for await (const path of new Glob('**/*').scan(CLIENT_DIR)) {
     const file = Bun.file(`${CLIENT_DIR}/${path}`);
     const cache = getCacheHeaders(path);
+    // Hashed assets are served from the patched bytes, so derive the validator from them.
+    const etag =
+      cache === REVALIDATE ? `"${Bun.hash(await file.arrayBuffer()).toString(16)}"` : undefined;
     for (const prefix of ['', BASE_PATH]) {
       const routePath = `${prefix}/${path}`;
       routes[routePath] = (req) =>
         withHttpMetrics(req, routePath, async () => {
-          const res = new Response(file, { headers: { 'Content-Type': file.type, ...cache } });
+          if (etag && req.headers.get('if-none-match') === etag) {
+            return new Response(null, { status: 304, headers: { ...cache, ETag: etag } });
+          }
+          const res = new Response(file, {
+            headers: { 'Content-Type': file.type, ...cache, ...(etag ? { ETag: etag } : {}) },
+          });
           applySecurityHeaders(res.headers);
           return res;
         });
