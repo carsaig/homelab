@@ -146,7 +146,9 @@ const server = Bun.serve({
         text = text.replaceAll('/admin/favicon.ico', '/favicon.ico').replaceAll('/favicon.ico', `${BASE_PATH}/favicon.ico`);
         text = text.replaceAll('/admin/manifest.json', '/manifest.json').replaceAll('/manifest.json', `${BASE_PATH}/manifest.json`);
         text = text.replaceAll('/admin/librechat-logo.svg', '/librechat-logo.svg').replaceAll('/librechat-logo.svg', `${BASE_PATH}/librechat-logo.svg`);
-        text = text.replaceAll('/styles-', `${BASE_PATH}/assets/styles-`);
+        // Only rewrite a stylesheet reference that has not been prefixed already, otherwise
+        // this rule runs over its own output and yields <base>/assets/<base>/assets/styles-...
+        text = text.replace(/(?<!\/assets)\/styles-/g, `${BASE_PATH}/assets/styles-`);
         body = text;
       }
 
