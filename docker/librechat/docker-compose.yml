@@ -25,7 +25,7 @@ services:
       MIN_PASSWORD_LENGTH: 14
       SESSION_EXPIRY: 1000 * 60 * 15
       REFRESH_TOKEN_EXPIRY: (1000 * 60 * 60 * 24) * 7
-      SESSION_COOKIE_SECURE: false
+      SESSION_COOKIE_SECURE: true # TLS endet an Traefik, TRUST_PROXY deckt die Hops ab
       JWT_SECRET: ${SERVICES_LIBRECHAT_JWT_SECRET}
       JWT_REFRESH_SECRET: ${SERVICES_LIBRECHAT_JWT_REFRESH_SECRET}
 
@@ -74,8 +74,10 @@ services:
       MONGO_AUTO_CREATE: false # needs clraification
 
       # Custom domain deployment
-      DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.mydomain.com?
-      DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.mydomain.com?
+      # Die Redirect-URI des OIDC-Flows wird hieraus gebaut. Steht hier localhost,
+      # meldet der Identity Provider redirect_uri mismatch.
+      DOMAIN_CLIENT: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
+      DOMAIN_SERVER: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
       ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       ADMIN_PANEL_PORT: 3000
@@ -101,6 +103,7 @@ services:
       TITLE_CONVO: true # Enable titling for all endpoints.
       DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
       DB_PORT: 5432
+      RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL:-http://rag-api:8000}
       PLATFORM_NETWORK: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
       NODE_ENV: production
       DEPLOYMENT_SKILLS_DIR: ./skill
@@ -132,8 +135,10 @@ services:
       STREAM_DELTA_COALESCE_MS: 25
       REDIS_URI: ${SERVICES_LIBRECHAT_REDIS_URI}
       REDIS_URL: ${SERVICES_LIBRECHAT_REDIS_URL}
-      USE_REDIS_CLUSTER: true
-      REDIS_CLUSTER_SAFE_DELETE: true
+      # Der redis-Service ist eine Einzelinstanz. Bei nur einer URI erzwingt
+      # USE_REDIS_CLUSTER=true den Cluster-Modus -> CLUSTER-Kommandos laufen ins Leere.
+      USE_REDIS_CLUSTER: false
+     # - REDIS_CLUSTER_SAFE_DELETE: true -> wirkt nur im Cluster-Modus
       # - REDIS_USERNAME: currently not in use?
       # - REDIS_PASSWORD: currently not in use?
       # - REDIS_CA: not in use
@@ -159,8 +164,12 @@ services:
       OPENID_CALLBACK_URL: /oauth/openid/callback
       OPENID_SCOPE: openid profile email
       OPENID_BUTTON_LABEL: Login with Tailscale
-      OPENID_AUDIENCE: https://api.librechat.com # -> requires clarification
-      OPENID_REQUIRED_ROLE: admin,teacher,student,user # -> requires clarification
+     # - OPENID_AUDIENCE: nur setzen, wenn der IdP genau diese Audience ausstellt.
+     #   Der frueher hier stehende Wert war ein Doku-Beispiel und haette jede
+     #   Token-Pruefung scheitern lassen.
+     # - OPENID_REQUIRED_ROLE: Tuersteher, kein Rollen-Management. Ohne passenden
+     #   Claim im Token wird JEDER Login abgelehnt. Kommt zurueck, sobald der IdP
+     #   Rollen ausliefert; die Zuweisung laeuft bis dahin ueber das Admin-Panel.
      # - OPENID_REQUIRED_ROLE_TOKEN_KIND: requires clarification
      # - OPENID_REQUIRED_ROLE_PARAMETER_PATH: requires clarification
      # - OPENID_ADMIN_ROLE: admin
@@ -483,8 +492,8 @@ services:
       # The panel is published on its own host and serves itself from /admin there, which
       # is the layout its bundle is built for.
       VITE_BASE_PATH: /admin
-      DOMAIN_CLIENT: http://localhost:3080
-      DOMAIN_SERVER: http://localhost:3080
+      DOMAIN_CLIENT: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
+      DOMAIN_SERVER: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       ADMIN_PANEL_SESSION_COOKIE_SECURE: true
@@ -504,6 +513,7 @@ services:
       - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-websecure.service=librechat-admin-service"
       - "traefik.http.routers.librechat-admin-websecure.tls=true"
+      - "traefik.http.routers.librechat-admin-websecure.tls.certresolver=letsencrypt"
       - "traefik.http.services.librechat-admin-service.loadbalancer.server.port=3000"
     networks:
       - default
@@ -542,7 +552,7 @@ services:
     depends_on:
       - vectordb
     environment:
-      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
+      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST:-vectordb}
       DB_PORT: 5432
       POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
       POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
