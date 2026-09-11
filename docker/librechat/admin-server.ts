@@ -40,6 +40,12 @@ const LONG_CACHE: Record<string, string> = {
   'Cache-Control': `public, max-age=${maxAge}, s-maxage=${sMaxAge}`,
 };
 
+// Asset file names carry the build's content hash, but the bytes are rewritten as they
+// are served, so the name no longer identifies what a client receives. Stamp every
+// reference with a token that changes whenever this process starts: a corrected asset
+// arrives under a URL nothing has cached yet.
+const BUILD_TAG = Date.now().toString(36);
+
 const CACHE_RESET_ID = 'v4';
 const CACHE_RESET_COOKIE = 'admin_cache_reset';
 
@@ -101,6 +107,12 @@ async function withHttpMetrics(
   return res;
 }
 
+function stampAssetReferences(text: string): string {
+  if (!BASE_PATH) return text;
+  const reference = new RegExp(`${BASE_PATH}/assets/([A-Za-z0-9_.-]+)(?!\\?)`, 'g');
+  return text.replace(reference, (_match, file) => `${BASE_PATH}/assets/${file}?v=${BUILD_TAG}`);
+}
+
 async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Promise<Response>>> {
   const routes: Record<string, (req: Request) => Promise<Response>> = {};
   for await (const path of new Glob('**/*').scan(CLIENT_DIR)) {
@@ -128,8 +140,9 @@ async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Pro
               .replaceAll('basepath:``', `basepath:\`${BASE_PATH}\``)
               .replaceAll('basepath:"/"', `basepath:"${BASE_PATH}"`)
               .replaceAll('basepath:""', `basepath:"${BASE_PATH}"`);
-            if (rewritten !== code) {
-              body = rewritten;
+            const stamped = stampAssetReferences(rewritten);
+            if (stamped !== code) {
+              body = stamped;
             }
           }
           const etag =
@@ -180,7 +193,7 @@ const server = Bun.serve({
         // Only rewrite a stylesheet reference that has not been prefixed already, otherwise
         // this rule runs over its own output and yields <base>/assets/<base>/assets/styles-...
         text = text.replace(/(?<!\/assets)\/styles-/g, `${BASE_PATH}/assets/styles-`);
-        body = text;
+        body = stampAssetReferences(text);
       }
 
       const patched = new Response(body, res);
