@@ -106,6 +106,9 @@ services:
     environment:
       - API_SERVER_URL=http://api:${HOST_PORT:-3080}
       - VITE_API_BASE_URL=https://${DOMAIN_HOST}
+      # Assets are rewritten as they are served, so an edge cache holding them for a day
+      # would keep handing out a copy the server has already corrected.
+      - ADMIN_PANEL_STATIC_CACHE_S_MAX_AGE=${ADMIN_PANEL_STATIC_CACHE_S_MAX_AGE:-0}
       - VITE_BASE_PATH=/admin
       - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
       - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
