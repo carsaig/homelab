@@ -10,158 +10,157 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - PUBLIC_REPO_GUARD: off
       # Docs: https://www.librechat.ai/docs/configuration/dotenv
       # Logins
-      - ALLOW_SOCIAL_REGISTRATION: true
-      - ALLOW_SOCIAL_LOGIN: true
-      - ALLOW_EMAIL_LOGIN: true
-      - ALLOW_REGISTRATION: true
-      - LOGIN_MAX: 1000
-      - LOGIN_WINDOW: 1
-      - ALLOW_EMAIL_LOGIN_OVERRIDE: false
-      - ALLOW_PASSWORD_RESET: true
-      - ALLOW_ACCOUNT_DELETION: true
-      - ALLOW_UNVERIFIED_EMAIL_LOGIN: false
-      - MIN_PASSWORD_LENGTH: 14
-      - SESSION_EXPIRY: 1000 * 60 * 15
-      - REFRESH_TOKEN_EXPIRY: (1000 * 60 * 60 * 24) * 7
-      - SESSION_COOKIE_SECURE: false
-      - JWT_SECRET: ${SERVICES_LIBRECHAT_JWT_SECRET}
-      - JWT_REFRESH_SECRET: ${SERVICES_LIBRECHAT_JWT_REFRESH_SECRET}
+      ALLOW_SOCIAL_REGISTRATION: true
+      ALLOW_SOCIAL_LOGIN: true
+      ALLOW_EMAIL_LOGIN: true
+      ALLOW_REGISTRATION: true
+      LOGIN_MAX: 1000
+      LOGIN_WINDOW: 1
+      ALLOW_EMAIL_LOGIN_OVERRIDE: false
+      ALLOW_PASSWORD_RESET: true
+      ALLOW_ACCOUNT_DELETION: true
+      ALLOW_UNVERIFIED_EMAIL_LOGIN: false
+      MIN_PASSWORD_LENGTH: 14
+      SESSION_EXPIRY: 1000 * 60 * 15
+      REFRESH_TOKEN_EXPIRY: (1000 * 60 * 60 * 24) * 7
+      SESSION_COOKIE_SECURE: false
+      JWT_SECRET: ${SERVICES_LIBRECHAT_JWT_SECRET}
+      JWT_REFRESH_SECRET: ${SERVICES_LIBRECHAT_JWT_REFRESH_SECRET}
 
     # Base Config
     # HTTP Server Timeouts ared defined by node defaults, can be overridden by (not implemented)
     # env variables if required
-      - APP_TITLE: LibreChat
-      - DOMAIN_HOST: ${SERVICES_LIBRECHAT_DOMAIN_HOST}
-      - HOST: 0.0.0.0
-      - PORT: 3080
-      - TRUST_PROXY: 2
+      APP_TITLE: LibreChat
+      DOMAIN_HOST: ${SERVICES_LIBRECHAT_DOMAIN_HOST}
+      HOST: 0.0.0.0
+      PORT: 3080
+      TRUST_PROXY: 2
       # - TRUST_TENANT_HEADER controls whether LibreChat accepts X-Tenant-Id before
       # authentication on the /oauth, /api/auth, and /api/share route trees. disabled by default.
       # Enable this setting only when a trusted reverse proxy strips every incoming X-Tenant-Id
       # value and sets the authoritative tenant ID itself.
-      - CUSTOM_FOOTER: ${SERVICES_LIBRECHAT_CUSTOM_FOOTER}
-      - SHOW_BIRTHDAY_ICON: true
+      CUSTOM_FOOTER: ${SERVICES_LIBRECHAT_CUSTOM_FOOTER}
+      SHOW_BIRTHDAY_ICON: true
       # - ANALYTICS_GTM_ID: no tracking applied currently
 
       # Proxy (Traefik)
-      - LIBRECHAT_MIDDLEWARE_LABEL: ${SERVICES_LIBRECHAT_LIBRECHAT_MIDDLEWARE_LABEL}
+      LIBRECHAT_MIDDLEWARE_LABEL: ${SERVICES_LIBRECHAT_LIBRECHAT_MIDDLEWARE_LABEL}
 
       # Credentials: CREDS_KEY and CREDS_IV are used to encrypt supported credentials stored in the db
-      - CREDS_IV: ${SERVICES_LIBRECHAT_CREDS_IV}
-      - CREDS_KEY: ${SERVICES_LIBRECHAT_CREDS_KEY}
-      - LIBRECHAT_TEMP_CREDENTIALS_PATH: /app/data/.env.temp
+      CREDS_IV: ${SERVICES_LIBRECHAT_CREDS_IV}
+      CREDS_KEY: ${SERVICES_LIBRECHAT_CREDS_KEY}
+      LIBRECHAT_TEMP_CREDENTIALS_PATH: /app/data/.env.temp
 
       # Static File handling and caching
-      - STATIC_CACHE_MAX_AGE: 172800
-      - STATIC_CACHE_S_MAX_AGE: "86400"
-      - DISABLE_COMPRESSION: true
-      - ENABLE_STATIC_ASSET_BROTLI: true
-      - ENABLE_IMAGE_OUTPUT_GZIP_SCAN: true
-      - INDEX_CACHE_CONTROL: no-cache, no-store, must-revalidate
-      - INDEX_PRAGMA: no-cache
-      - INDEX_EXPIRES: 0
+      STATIC_CACHE_MAX_AGE: 172800
+      STATIC_CACHE_S_MAX_AGE: "86400"
+      DISABLE_COMPRESSION: true
+      ENABLE_STATIC_ASSET_BROTLI: true
+      ENABLE_IMAGE_OUTPUT_GZIP_SCAN: true
+      INDEX_CACHE_CONTROL: no-cache, no-store, must-revalidate
+      INDEX_PRAGMA: no-cache
+      INDEX_EXPIRES: 0
 
       # Database
-      - MONGO_URI: ${SERVICES_LIBRECHAT_MONGO_URI}
-      - MONGO_MAX_POOL_SIZE: 30
-      - MONGO_MIN_POOL_SIZE: 1
-      - MONGO_MAX_CONNECTING: 20
+      MONGO_URI: ${SERVICES_LIBRECHAT_MONGO_URI}
+      MONGO_MAX_POOL_SIZE: 30
+      MONGO_MIN_POOL_SIZE: 1
+      MONGO_MAX_CONNECTING: 20
       # - MONGO_MAX_IDLE_TIME_MS: -> unclear, needs a valid value
       # - MONGO_WAIT_QUEUE_TIMEOUT_MS: -> unclear, needs a valid value
-      - MONGO_AUTO_INDEX: false # needs clarification
-      - MONGO_AUTO_CREATE: false # needs clraification
+      MONGO_AUTO_INDEX: false # needs clarification
+      MONGO_AUTO_CREATE: false # needs clraification
 
       # Custom domain deployment
-      - DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.mydomain.com?
-      - DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.mydomain.com?
-      - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
-      - ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
-      - ADMIN_PANEL_PORT: 3000
-      - NO_INDEX: true
+      DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.mydomain.com?
+      DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.mydomain.com?
+      ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
+      ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
+      ADMIN_PANEL_PORT: 3000
+      NO_INDEX: true
 
       # Logging:
-      - DEBUG_CONSOLE: false
-      - DEBUG_LOGGING: true
-      - CONSOLE_LOG_LEVEL: debug
-      - LOG_TO_FILE: false
-      - CONSOLE_JSON: false
-      - CONSOLE_JSON_STRING_LENGTH: 255
-      - LIBRECHAT_LOG_DIR: /app/logs
-      - MEM_DIAG: true
-      - AGENT_DEBUG_LOGGING: true
+      DEBUG_CONSOLE: false
+      DEBUG_LOGGING: true
+      CONSOLE_LOG_LEVEL: debug
+      LOG_TO_FILE: false
+      CONSOLE_JSON: false
+      CONSOLE_JSON_STRING_LENGTH: 255
+      LIBRECHAT_LOG_DIR: /app/logs
+      MEM_DIAG: true
+      AGENT_DEBUG_LOGGING: true
 
       # other general config
-      - ENDPOINTS: agents,assistants,gptPlugins,custom,google,anthropic,azureOpenAI,openAI
+      ENDPOINTS: agents,assistants,gptPlugins,custom,google,anthropic,azureOpenAI,openAI
      # - PROXY: Outbound proxy for supported server-side clients. Not in use.
      # - HTTP_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
      # - HTTPS_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
      # - NO_PROXY: Comma-separated hosts, domains, or IP ranges that supported server-side clients should bypass.
-      - TITLE_CONVO: true # Enable titling for all endpoints.
-      - DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
-      - DB_PORT: 5432
-      - PLATFORM_NETWORK: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
-      - NODE_ENV: production
-      - DEPLOYMENT_SKILLS_DIR: ./skill
-      - DEPLOYMENT_PLUGINS_DIR: ./plugin
-      - DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
-      - DEPLOYMENT_PLUGIN_HOOKS: true
-      - SCHEDULES_SINGLE_PROCESS: true
-      - DOCKER_HOST: ${SERVICES_LIBRECHAT_DOCKER_HOST}
-      - CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES: 262144000
-      - FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
+      TITLE_CONVO: true # Enable titling for all endpoints.
+      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
+      DB_PORT: 5432
+      PLATFORM_NETWORK: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
+      NODE_ENV: production
+      DEPLOYMENT_SKILLS_DIR: ./skill
+      DEPLOYMENT_PLUGINS_DIR: ./plugin
+      DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
+      DEPLOYMENT_PLUGIN_HOOKS: true
+      SCHEDULES_SINGLE_PROCESS: true
+      DOCKER_HOST: ${SERVICES_LIBRECHAT_DOCKER_HOST}
+      CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES: 262144000
+      FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
 
     # MCP Server
-      - MCP_GATEWAY_API_KEY_ADMIN: ${SERVICES_LIBRECHAT_MCP_GATEWAY_API_KEY_ADMIN}
-      - MCP_GATEWAY_AUTH: ${SERVICES_LIBRECHAT_MCP_GATEWAY_AUTH}
-      - MCP_URL: ${SERVICES_LIBRECHAT_MCP_URL}
-      - MCP_OAUTH_ON_AUTH_ERROR: true
-      - MCP_OAUTH_DETECTION_TIMEOUT: 5000
-      - MCP_OAUTH_HANDLING_TIMEOUT: 600000
-      - MCP_OAUTH_FLOW_TTL: 900000
-      - MCP_CONNECTION_CHECK_TTL: 30000
-      - MCP_TOOLS_LIST_MAX_PAGES: 50
+      MCP_GATEWAY_API_KEY_ADMIN: ${SERVICES_LIBRECHAT_MCP_GATEWAY_API_KEY}
+      MCP_GATEWAY_AUTH: ${SERVICES_LIBRECHAT_MCP_GATEWAY_AUTH}
+      MCP_URL: ${SERVICES_LIBRECHAT_MCP_URL}
+      MCP_OAUTH_ON_AUTH_ERROR: true
+      MCP_OAUTH_DETECTION_TIMEOUT: 5000
+      MCP_OAUTH_HANDLING_TIMEOUT: 600000
+      MCP_OAUTH_FLOW_TTL: 900000
+      MCP_CONNECTION_CHECK_TTL: 30000
+      MCP_TOOLS_LIST_MAX_PAGES: 50
      # - MCP_SKIP_CODE_CHALLENGE_CHECK: false -> needs clarification
-      - MCP_STREAMABLE_HTTP_MAX_RESPONSE_BYTES: 16777216
-      - MCP_STREAMABLE_HTTP_MAX_LINE_BYTES: 5242880
+      MCP_STREAMABLE_HTTP_MAX_RESPONSE_BYTES: 16777216
+      MCP_STREAMABLE_HTTP_MAX_LINE_BYTES: 5242880
 
     # REDIS
-      - USE_REDIS: true
-      - USE_REDIS_STREAMS: true
-      - STREAM_DELTA_COALESCE_MS: 25
-      - REDIS_URI: ${SERVICES_LIBRECHAT_REDIS_URI}
-      - REDIS_URL: ${SERVICES_LIBRECHAT_REDIS_URL}
-      - USE_REDIS_CLUSTER: true
-      - REDIS_CLUSTER_SAFE_DELETE: true
+      USE_REDIS: true
+      USE_REDIS_STREAMS: true
+      STREAM_DELTA_COALESCE_MS: 25
+      REDIS_URI: ${SERVICES_LIBRECHAT_REDIS_URI}
+      REDIS_URL: ${SERVICES_LIBRECHAT_REDIS_URL}
+      USE_REDIS_CLUSTER: true
+      REDIS_CLUSTER_SAFE_DELETE: true
       # - REDIS_USERNAME: currently not in use?
       # - REDIS_PASSWORD: currently not in use?
       # - REDIS_CA: not in use
-      - REDIS_KEY_PREFIX: librechat-prod-v2
+      REDIS_KEY_PREFIX: librechat-prod-v2
     # - REDIS_KEY_PREFIX_VAR: K_REVISION -> requires clarification
-      - REDIS_MAX_LISTENERS: 40
-      - REDIS_READONLY_RECOVERY_INTERVAL: 5000
-      - REDIS_PING_INTERVAL: 300
-      - FORCED_IN_MEMORY_CACHE_NAMESPACES: ROLES,MESSAGES
-      - AUTH_USER_CACHE_MODE: off
-      - USER_PRINCIPALS_CACHE_TTL_MS: 300000
-      - USER_PRINCIPALS_LOCK_TTL_MS: 5000
-      - USER_PRINCIPALS_LOCK_WAIT_MS: 5000
-      - REDIS_USE_ALTERNATIVE_DNS_LOOKUP: true
+      REDIS_MAX_LISTENERS: 40
+      REDIS_READONLY_RECOVERY_INTERVAL: 5000
+      REDIS_PING_INTERVAL: 300
+      FORCED_IN_MEMORY_CACHE_NAMESPACES: ROLES,MESSAGES
+      AUTH_USER_CACHE_MODE: "off"
+      USER_PRINCIPALS_CACHE_TTL_MS: 300000
+      USER_PRINCIPALS_LOCK_TTL_MS: 5000
+      USER_PRINCIPALS_LOCK_WAIT_MS: 5000
+      REDIS_USE_ALTERNATIVE_DNS_LOOKUP: true
 
     # OIDC
-      - OIDC_HOST: ${SERVICES_LIBRECHAT_OIDC_HOST}
-      - OPENID_GENERATE_NONCE: true
-      - OPENID_CLIENT_ID: ${SERVICES_LIBRECHAT_OPENID_CLIENT_ID}
-      - OPENID_CLIENT_SECRET: ${SERVICES_LIBRECHAT_OPENID_CLIENT_SECRET}
-      - OPENID_SESSION_SECRET: ${SERVICES_LIBRECHAT_OPENID_SESSION_SECRET}
-      - OPENID_ISSUER: ${SERVICES_LIBRECHAT_OPENID_ISSUER}
-      - OPENID_CALLBACK_URL: /oauth/openid/callback
-      - OPENID_SCOPE: openid profile email
-      - OPENID_BUTTON_LABEL: Login with Tailscale
-      - OPENID_AUDIENCE: https://api.librechat.com # -> requires clarification
-      - OPENID_REQUIRED_ROLE: admin,teacher,student,user # -> requires clarification
+      OIDC_HOST: ${SERVICES_LIBRECHAT_OIDC_HOST}
+      OPENID_GENERATE_NONCE: true
+      OPENID_CLIENT_ID: ${SERVICES_LIBRECHAT_OPENID_CLIENT_ID}
+      OPENID_CLIENT_SECRET: ${SERVICES_LIBRECHAT_OPENID_CLIENT_SECRET}
+      OPENID_SESSION_SECRET: ${SERVICES_LIBRECHAT_OPENID_SESSION_SECRET}
+      OPENID_ISSUER: ${SERVICES_LIBRECHAT_OPENID_ISSUER}
+      OPENID_CALLBACK_URL: /oauth/openid/callback
+      OPENID_SCOPE: openid profile email
+      OPENID_BUTTON_LABEL: Login with Tailscale
+      OPENID_AUDIENCE: https://api.librechat.com # -> requires clarification
+      OPENID_REQUIRED_ROLE: admin,teacher,student,user # -> requires clarification
      # - OPENID_REQUIRED_ROLE_TOKEN_KIND: requires clarification
      # - OPENID_REQUIRED_ROLE_PARAMETER_PATH: requires clarification
      # - OPENID_ADMIN_ROLE: admin
@@ -198,10 +197,10 @@ services:
      # - ENTRA_ID_INCLUDE_OWNERS_AS_MEMBERS: false
      # - OPENID_GRAPH_SCOPES: User.Read,People.Read,GroupMember.Read.All,User.ReadBasic.All
      # - GRAPH_API_SCOPES: https://graph.microsoft.com/.default
-      - OPENID_IMAGE_URL: https://tailscale.com/favicon.ico
-      - GOOGLE_CLIENT_ID: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL: /oauth/google/callback
+      OPENID_IMAGE_URL: https://tailscale.com/favicon.ico
+      GOOGLE_CLIENT_ID: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: /oauth/google/callback
      # - DISCORD_CLIENT_ID:
      # - DISCORD_CLIENT_SECRET:
      # - DISCORD_CALLBACK_URL: /oauth/discord/callback
@@ -213,19 +212,19 @@ services:
      # - GITHUB_CALLBACK_URL:
 
     # Email Service
-      - EMAIL_SERVICE: Gmail
-      - EMAIL_HOST: ${SERVICES_LIBRECHAT_EMAIL_HOST}
-      - EMAIL_PORT: 587
-      - EMAIL_ENCRYPTION: starttls
-      - EMAIL_ENCRYPTION_HOSTNAME: ${SERVICES_LIBRECHAT_EMAIL_ENCRYPTION_HOSTNAME}
-      - EMAIL_ALLOW_SELFSIGNED: true
-      - EMAIL_USERNAME: ${SERVICES_LIBRECHAT_EMAIL_USERNAME}
-      - EMAIL_PASSWORD: ${SERVICES_LIBRECHAT_EMAIL_PASSWORD}
-      - EMAIL_FROM_NAME: Librechat
-      - EMAIL_FROM: ${SERVICES_LIBRECHAT_EMAIL_FROM}
+      EMAIL_SERVICE: Gmail
+      EMAIL_HOST: ${SERVICES_LIBRECHAT_EMAIL_HOST}
+      EMAIL_PORT: 587
+      EMAIL_ENCRYPTION: starttls
+      EMAIL_ENCRYPTION_HOSTNAME: ${SERVICES_LIBRECHAT_EMAIL_ENCRYPTION_HOSTNAME}
+      EMAIL_ALLOW_SELFSIGNED: true
+      EMAIL_USERNAME: ${SERVICES_LIBRECHAT_EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${SERVICES_LIBRECHAT_EMAIL_PASSWORD}
+      EMAIL_FROM_NAME: Librechat
+      EMAIL_FROM: ${SERVICES_LIBRECHAT_EMAIL_FROM}
 
     # Memory: Supermemory or other self-hosted solution?
-      - SUPERMEMORY_API_KEY: ${SERVICES_LIBRECHAT_SUPERMEMORY_API_KEY}
+      SUPERMEMORY_API_KEY: ${SERVICES_LIBRECHAT_SUPERMEMORY_API_KEY}
 
     # File storage & CDN -> Use backblaze
     # - AWS_ACCESS_KEY_ID: IAM user access key ID. Optional if using IRSA.
@@ -239,24 +238,26 @@ services:
 
     # Inference
     # custom endpoint config: https://www.librechat.ai/docs/quick_start/custom_endpoints
-      - LLM_PROVIDER: Omniroute
-      - LLM_GATEWAY_NAME: Omniroute
-      - LLM_MODEL: coding-adaptive
-      - LLM_GATEWAY_BASEURL: http://omniroute:8000/v1
-      - SUMMARY_MODEL: cinf/gpt-5.4-mini
-      - MODEL_DISPLAY_LABEL: Omniroute
-      - MCP_URL: http://bifrost:8080/mcp
+      LLM_PROVIDER: Omniroute
+      LLM_GATEWAY_NAME: Omniroute
+      LLM_MODEL: coding-adaptive
+      LLM_GATEWAY_BASEURL: http://omniroute:8000/v1
+      LLM_GATEWAY_AUTH: ${SERVICES_LIBRECHAT_LLM_GATEWAY_AUTH}
+      SUMMARY_MODEL: cinf/gpt-5.4-mini
+      MODEL_DISPLAY_LABEL: Omniroute
+    # MCP_URL steht oben unter 'MCP Server' und kommt aus dem Vault:
+    # lokal http://bifrost:8080/mcp, alternativ der Cloudflare-Gateway.
      # - COHERE_API_KEY: ${COHERE_API_KEY:-}
      # - GEMINI_API_KEY:
      # - GEMINI_IMAGE_MODEL:
      # - ASSISTANTS_API_KEY: OpenAI API key for Assistants API. Docs: https://www.librechat.ai/docs/configuration/pre_configured_ai/assistants
 
     # Web-Search & Reranker
-      - TAVILY_API_KEY: ${SERVICES_LIBRECHAT_TAVILY_API_KEY}
+      TAVILY_API_KEY: ${SERVICES_LIBRECHAT_TAVILY_API_KEY}
       #TAVILY_SEARCH_URL:
       #TAVILY_EXTRACT_URL:
-      - SEARXNG_INSTANCE_URL: http://searxng:8080
-      # SEARXNG_API_KEY:
+      SEARXNG_INSTANCE_URL: http://searxng:8080
+      SEARXNG_API_KEY: ${SERVICES_LIBRECHAT_SEARXNG_API_KEY:-}
       # SERPER_API_KEY: # https://serper.dev/api-keys
       # KEENABLE_API_KEY: Optional Keenable API key for search and page fetch.
       # KEENABLE_API_URL: Optional custom Keenable search API URL.
@@ -264,18 +265,18 @@ services:
       # FIRECRAWL_API_KEY:
       # FIRECRAWL_API_URL: Only needed for custom Firecrawl instances.
       # FIRECRAWL_VERSION: Firecrawl API version (v0 or v1).
-      - JINA_API_KEY: ${SERVICES_LIBRECHAT_JINA_API_KEY}
+      JINA_API_KEY: ${SERVICES_LIBRECHAT_JINA_API_KEY}
       # - JINA_API_URL: Custom Jina API URL (optional)
-      - COHERE_API_KEY: ${SERVICES_LIBRECHAT_COHERE_API_KEY}
+      COHERE_API_KEY: ${SERVICES_LIBRECHAT_COHERE_API_KEY}
       # - OMNIROUTE_SEARCH_URL: ${OMNIROUTE_SEARCH_URL}
       # - OPENWEATHER_API_KEY:
 
     # Meilisearch Volltextsuche
-      - SEARCH: true
-      - MEILI_HOST: http://meilisearch:7700
-      - MEILI_NO_ANALYTICS: true
-      - MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
-      - MEILI_NO_SYNC: true # prevents LibreChat from attempting a database indexing sync with Meilisearch
+      SEARCH: true
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_NO_ANALYTICS: true
+      MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
+      MEILI_NO_SYNC: true # prevents LibreChat from attempting a database indexing sync with Meilisearch
 
     # Content Security Policy (CSP)
     # - CSP_ENABLED: true
@@ -340,9 +341,9 @@ services:
     #  - TTS_API_KEY: API key for Text-to-Speech service (e.g., OpenAI TTS).
 
     # Shared Links - Configure shared conversation links functionality.
-      - ALLOW_SHARED_LINKS: true
-      - ALLOW_SHARED_LINKS_PUBLIC: false
-      - SHARED_LINKS_SNAPSHOT_FILES: true
+      ALLOW_SHARED_LINKS: true
+      ALLOW_SHARED_LINKS_PUBLIC: false
+      SHARED_LINKS_SNAPSHOT_FILES: true
 
     # Scheduled Chats
     # - SCHEDULES_SINGLE_PROCESS: true
@@ -359,11 +360,11 @@ services:
     # https://www.librechat.ai/docs/configuration/dotenv#registration-and-login
     # https://www.librechat.ai/docs/configuration/dotenv#password-reset
     # Admin Insights Dashboard:
-      - ENABLE_INSIGHTS: true
+      ENABLE_INSIGHTS: true
 
     # Agent Conversation Control
     # Maximum characters allowed in one mid-run Agent steering message.
-      - STEER_MAX_LENGTH: 16000
+      STEER_MAX_LENGTH: 16000
 
     # Moderation
     # https://www.librechat.ai/docs/configuration/mod_system
@@ -453,12 +454,12 @@ services:
       - librechat_logs:/app/api/logs
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
+      - "traefik.docker.network=${SERVICES_LIBRECHAT_PLATFORM_NETWORK}"
       - "traefik.http.routers.librechat-web.entrypoints=web"
-      - "traefik.http.routers.librechat-web.rule=Host(`${DOMAIN_HOST}`)"
+      - "traefik.http.routers.librechat-web.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`)"
       - "traefik.http.routers.librechat-web.service=librechat-service"
       - "traefik.http.routers.librechat-websecure.entrypoints=websecure"
-      - "traefik.http.routers.librechat-websecure.rule=Host(`${DOMAIN_HOST}`)"
+      - "traefik.http.routers.librechat-websecure.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`)"
       - "traefik.http.routers.librechat-websecure.service=librechat-service"
       - "traefik.http.routers.librechat-websecure.tls=true"
       - "traefik.http.routers.librechat-websecure.tls.certresolver=letsencrypt"
@@ -477,25 +478,25 @@ services:
     depends_on:
       - api
     environment:
-      - API_SERVER_URL: http://api:${SERVICES_LIBRECHAT_HOST_PORT:-3080}
-      - VITE_API_BASE_URL: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
+      API_SERVER_URL: http://api:3080
+      VITE_API_BASE_URL: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       # The panel is published on its own host and serves itself from /admin there, which
       # is the layout its bundle is built for.
-      - VITE_BASE_PATH: /admin
-      - DOMAIN_CLIENT: http://localhost:3080
-      - DOMAIN_SERVER: http://localhost:3080
-      - SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
-      - ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
-      - ADMIN_PANEL_SESSION_COOKIE_SECURE: true
-      - SESSION_COOKIE_SECURE: true
-      - ADMIN_SSO_ONLY: true
-      - ADMIN_SESSION_IDLE_TIMEOUT_MS: 1800000
-      - ADMIN_PANEL_PORT: 3000
-      - ADMIN_PANEL_HOST: ${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
-      - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
+      VITE_BASE_PATH: /admin
+      DOMAIN_CLIENT: http://localhost:3080
+      DOMAIN_SERVER: http://localhost:3080
+      SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
+      ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
+      ADMIN_PANEL_SESSION_COOKIE_SECURE: true
+      SESSION_COOKIE_SECURE: true
+      ADMIN_SSO_ONLY: true
+      ADMIN_SESSION_IDLE_TIMEOUT_MS: 1800000
+      ADMIN_PANEL_PORT: 3000
+      ADMIN_PANEL_HOST: ${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
+      ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
+      - "traefik.docker.network=${SERVICES_LIBRECHAT_PLATFORM_NETWORK}"
       - "traefik.http.routers.librechat-admin-web.entrypoints=web"
       - "traefik.http.routers.librechat-admin-web.rule=Host(`${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-web.service=librechat-admin-service"
@@ -513,9 +514,9 @@ services:
     image: getmeili/meilisearch:v1.12
     restart: always
     environment:
-      - MEILI_HOST: http://0.0.0.0:7700
-      - MEILI_NO_ANALYTICS: true
-      - MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
+      MEILI_HOST: http://0.0.0.0:7700
+      MEILI_NO_ANALYTICS: true
+      MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
     volumes:
       - meilisearch_data:/meili_data
     networks:
@@ -541,23 +542,23 @@ services:
     depends_on:
       - vectordb
     environment:
-      - DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
-      - DB_PORT: 5432
-      - POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
-      - POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
-      - POSTGRES_DB: ${SERVICES_LIBRECHAT_POSTGRES_DB}
-      - RAG_HOST: 0.0.0.0 # -> clarify, if this is valid
-      - RAG_PORT: 8000
-      - RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL}
-      - COLLECTION_NAME: librechat
-      - EMBEDDINGS_PROVIDER: openai # openai, azure, huggingface, huggingfacetei, or ollama
-      - EMBEDDINGS_MODEL: embedding-openai
-      - RAG_OPENAI_BASEURL: ${SERVICES_LIBRECHAT_LLM_GATEWAY_BASEURL}
-      - RAG_OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY_ADMIN}
-      - OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY_ADMIN}
+      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
+      DB_PORT: 5432
+      POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SERVICES_LIBRECHAT_POSTGRES_DB}
+      RAG_HOST: 0.0.0.0 # -> clarify, if this is valid
+      RAG_PORT: 8000
+      RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL}
+      COLLECTION_NAME: librechat
+      EMBEDDINGS_PROVIDER: openai # openai, azure, huggingface, huggingfacetei, or ollama
+      EMBEDDINGS_MODEL: embedding-openai
+      RAG_OPENAI_BASEURL: http://omniroute:8000/v1
+      RAG_OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY}
+      OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY}
       # - RAG_USE_FULL_CONTEXT: Fetch entire file context instead of top 4 results. Default: false.
-      - CHUNK_SIZE: 1500
-      - CHUNK_OVERLAP: 100
+      CHUNK_SIZE: 1500
+      CHUNK_OVERLAP: 100
 
 
   vectordb:
@@ -565,9 +566,9 @@ services:
     image: pgvector/pgvector:0.8.0-pg17
     restart: always
     environment:
-      - POSTGRES_DB=${SERVICES_LIBRECHAT_POSTGRES_DB}
-      - POSTGRES_USER=${SERVICES_LIBRECHAT_POSTGRES_USER}
-      - POSTGRES_PASSWORD=${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SERVICES_LIBRECHAT_POSTGRES_DB}
+      POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
     volumes:
       - pgvector_data:/var/lib/postgresql/data
 
