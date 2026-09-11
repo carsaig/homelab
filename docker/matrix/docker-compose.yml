@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: matrix-postgres
     image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     restart: unless-stopped
     environment:
@@ -30,6 +31,7 @@ services:
   # Generates MAS signing keys once into the shared volume (idempotent).
   # MAS is distroless, so a small init container performs key generation.
   mas-keygen:
+    container_name: matrix-mas-keygen
     image: alpine/openssl@sha256:0a0b910a215ef38890e24526795f11d92c6f1016682fc4ef37fc5c44e23b758f
     restart: "no"
     entrypoint: ["/bin/sh", "-c"]
@@ -46,6 +48,7 @@ services:
     networks: [platform]
 
   mas:
+    container_name: matrix-mas
     image: ghcr.io/element-hq/matrix-authentication-service@sha256:73bb86fb8f412082829e603417b2df3e351bbda79bedaa46beb0f3f533bdcc1c
     restart: unless-stopped
     depends_on:
@@ -63,6 +66,7 @@ services:
 
   # Generates the Synapse signing key once into the data volume (idempotent).
   synapse-keygen:
+    container_name: matrix-synapse-keygen
     image: ghcr.io/element-hq/synapse@sha256:6345789f58048687f3024a99d3d59b5444fc9cc1de61d2947000cbac89573fcb
     restart: "no"
     entrypoint: ["/bin/sh", "-c"]
@@ -78,6 +82,7 @@ services:
     networks: [platform]
 
   synapse:
+    container_name: matrix-synapse
     image: ghcr.io/element-hq/synapse@sha256:6345789f58048687f3024a99d3d59b5444fc9cc1de61d2947000cbac89573fcb
     restart: unless-stopped
     depends_on:
@@ -100,6 +105,7 @@ services:
 
   # Serves the server discovery document not provided by Synapse.
   wellknown:
+    container_name: matrix-wellknown
     image: nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
     restart: unless-stopped
     configs:
@@ -111,6 +117,7 @@ services:
 
   # Matrix-level administration for rooms, media, and server settings.
   synapse-admin:
+    container_name: matrix-synapse-admin
     image: ghcr.io/etkecc/synapse-admin@sha256:ce1eaf7d890f44c0e40896dcbee9e560484a5b6953ffd3deaf2ecc625a74dc25
     restart: unless-stopped
     configs:
