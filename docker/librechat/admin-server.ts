@@ -193,7 +193,7 @@ const NO_CACHE: Record<string, string> = {
 // after the build, so a browser can hold a copy that no longer matches what we send and,
 // being immutable, will never revalidate it. Purge the origin's cache once per browser
 // and remember that we did so; afterwards normal caching applies.
-const CACHE_RESET_ID = 'v2';
+const CACHE_RESET_ID = 'v3';
 const CACHE_RESET_COOKIE = 'admin_cache_reset';
 
 const REVALIDATE: Record<string, string> = {
