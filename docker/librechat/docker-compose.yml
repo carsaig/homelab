@@ -75,8 +75,8 @@ services:
       - MONGO_AUTO_CREATE: false # needs clraification
 
       # Custom domain deployment
-      - DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.certain.cc?
-      - DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.certain.cc?
+      - DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.mydomain.com?
+      - DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.mydomain.com?
       - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
       - ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_PORT: 3000
@@ -100,9 +100,9 @@ services:
      # - HTTPS_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
      # - NO_PROXY: Comma-separated hosts, domains, or IP ranges that supported server-side clients should bypass.
       - TITLE_CONVO: true # Enable titling for all endpoints.
-      - DB_HOST: ${DB_HOST}
+      - DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
       - DB_PORT: 5432
-      - PLATFORM_NETWORK: dokploy-network
+      - PLATFORM_NETWORK: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
       - NODE_ENV: production
       - DEPLOYMENT_SKILLS_DIR: ./skill
       - DEPLOYMENT_PLUGINS_DIR: ./plugin
