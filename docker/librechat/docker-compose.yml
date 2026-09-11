@@ -27,6 +27,10 @@ services:
       - CREDS_IV=${CREDS_IV}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      # The API sends the browser back to ${ADMIN_PANEL_URL}/auth/openid/callback once
+      # the identity provider has authenticated an administrator. Without it the redirect
+      # falls back to the panel's container-internal address and the callback is lost.
+      - ADMIN_PANEL_URL=${ADMIN_PANEL_URL}
       - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
       - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
       - APP_TITLE=${APP_TITLE:-LibreChat}
