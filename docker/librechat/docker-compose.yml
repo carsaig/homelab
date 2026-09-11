@@ -106,32 +106,27 @@ services:
     environment:
       - API_SERVER_URL=http://api:${HOST_PORT:-3080}
       - VITE_API_BASE_URL=https://${DOMAIN_HOST}
-      # Assets are rewritten as they are served, so an edge cache holding them for a day
-      # would keep handing out a copy the server has already corrected.
-      - ADMIN_PANEL_STATIC_CACHE_S_MAX_AGE=${ADMIN_PANEL_STATIC_CACHE_S_MAX_AGE:-0}
+      # The panel is published on its own host and serves itself from /admin there, which
+      # is the layout its bundle is built for.
       - VITE_BASE_PATH=/admin
       - DOMAIN_CLIENT=${DOMAIN_CLIENT:-http://localhost:3080}
       - DOMAIN_SERVER=${DOMAIN_SERVER:-http://localhost:3080}
       - SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
+      - SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
       - ADMIN_SSO_ONLY=${ADMIN_SSO_ONLY:-true}
       - ADMIN_SESSION_IDLE_TIMEOUT_MS=${ADMIN_SESSION_IDLE_TIMEOUT_MS:-1800000}
-    volumes:
-      - ./admin-server.ts:/app/server.ts:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
       - "traefik.http.routers.librechat-admin-web.entrypoints=web"
-      - "traefik.http.routers.librechat-admin-web.rule=Host(`${DOMAIN_HOST}`) && PathPrefix(`/admin`)"
-      - "traefik.http.routers.librechat-admin-web.priority=200"
+      - "traefik.http.routers.librechat-admin-web.rule=Host(`${ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-web.service=librechat-admin-service"
       - "traefik.http.routers.librechat-admin-websecure.entrypoints=websecure"
-      - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${DOMAIN_HOST}`) && PathPrefix(`/admin`)"
-      - "traefik.http.routers.librechat-admin-websecure.priority=200"
+      - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-websecure.service=librechat-admin-service"
       - "traefik.http.routers.librechat-admin-websecure.tls=true"
-      - "traefik.http.routers.librechat-admin-websecure.tls.certresolver=letsencrypt"
       - "traefik.http.services.librechat-admin-service.loadbalancer.server.port=3000"
     networks:
       - default
