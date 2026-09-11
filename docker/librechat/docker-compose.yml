@@ -477,15 +477,15 @@ services:
     depends_on:
       - api
     environment:
-      - API_SERVER_URL: http://api:${HOST_PORT:-3080}
-      - VITE_API_BASE_URL: https://${DOMAIN_HOST}
+      - API_SERVER_URL: http://api:${SERVICES_LIBRECHAT_HOST_PORT:-3080}
+      - VITE_API_BASE_URL: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       # The panel is published on its own host and serves itself from /admin there, which
       # is the layout its bundle is built for.
       - VITE_BASE_PATH: /admin
       - DOMAIN_CLIENT: http://localhost:3080
       - DOMAIN_SERVER: http://localhost:3080
-      - SESSION_SECRET: ${ADMIN_PANEL_SESSION_SECRET}
-      - ADMIN_PANEL_SESSION_SECRET: ${ADMIN_PANEL_SESSION_SECRET}
+      - SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
+      - ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_SESSION_COOKIE_SECURE: true
       - SESSION_COOKIE_SECURE: true
       - ADMIN_SSO_ONLY: true
@@ -497,10 +497,10 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
       - "traefik.http.routers.librechat-admin-web.entrypoints=web"
-      - "traefik.http.routers.librechat-admin-web.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-web.rule=Host(`${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-web.service=librechat-admin-service"
       - "traefik.http.routers.librechat-admin-websecure.entrypoints=websecure"
-      - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${ADMIN_PANEL_HOST}`)"
+      - "traefik.http.routers.librechat-admin-websecure.rule=Host(`${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}`)"
       - "traefik.http.routers.librechat-admin-websecure.service=librechat-admin-service"
       - "traefik.http.routers.librechat-admin-websecure.tls=true"
       - "traefik.http.services.librechat-admin-service.loadbalancer.server.port=3000"
@@ -515,7 +515,7 @@ services:
     environment:
       - MEILI_HOST: http://0.0.0.0:7700
       - MEILI_NO_ANALYTICS: true
-      - MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      - MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
     volumes:
       - meilisearch_data:/meili_data
     networks:
@@ -541,20 +541,20 @@ services:
     depends_on:
       - vectordb
     environment:
-      - DB_HOST: ${DB_HOST}
+      - DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
       - DB_PORT: 5432
-      - POSTGRES_USER: ${POSTGRES_USER}
-      - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      - POSTGRES_DB: ${POSTGRES_DB}
+      - POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
+      - POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
+      - POSTGRES_DB: ${SERVICES_LIBRECHAT_POSTGRES_DB}
       - RAG_HOST: 0.0.0.0 # -> clarify, if this is valid
       - RAG_PORT: 8000
-      - RAG_API_URL: ${RAG_API_URL}
+      - RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL}
       - COLLECTION_NAME: librechat
       - EMBEDDINGS_PROVIDER: openai # openai, azure, huggingface, huggingfacetei, or ollama
       - EMBEDDINGS_MODEL: embedding-openai
-      - RAG_OPENAI_BASEURL: ${LLM_GATEWAY_BASEURL}
-      - RAG_OPENAI_API_KEY: ${LLM_GATEWAY_API_KEY_ADMIN}
-      - OPENAI_API_KEY: ${LLM_GATEWAY_API_KEY_ADMIN}
+      - RAG_OPENAI_BASEURL: ${SERVICES_LIBRECHAT_LLM_GATEWAY_BASEURL}
+      - RAG_OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY_ADMIN}
+      - OPENAI_API_KEY: ${SERVICES_LIBRECHAT_LLM_GATEWAY_API_KEY_ADMIN}
       # - RAG_USE_FULL_CONTEXT: Fetch entire file context instead of top 4 results. Default: false.
       - CHUNK_SIZE: 1500
       - CHUNK_OVERLAP: 100
@@ -565,9 +565,9 @@ services:
     image: pgvector/pgvector:0.8.0-pg17
     restart: always
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${SERVICES_LIBRECHAT_POSTGRES_DB}
+      - POSTGRES_USER=${SERVICES_LIBRECHAT_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
     volumes:
       - pgvector_data:/var/lib/postgresql/data
 
@@ -581,4 +581,4 @@ volumes:
 networks:
   platform:
     external: true
-    name: ${PLATFORM_NETWORK}
+    name: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
