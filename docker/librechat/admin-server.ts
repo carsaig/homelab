@@ -73,10 +73,20 @@ function patchDistFiles() {
           changed = true;
         }
 
-        // Relative Vite mapDeps in client files
-        if (code.includes('"assets/')) {
-          code = code.replaceAll('"assets/', `"${BASE_PATH}/assets/`);
-          changed = true;
+        // Vite's asset URL helper already prepends the base to every dependency
+        // (`${BASE_PATH}/` + dep with a leading slash stripped), so __vite__mapDeps
+        // entries have to stay relative. Making them absolute yields
+        // ${BASE_PATH}${BASE_PATH}/assets/... and every lazily loaded chunk 404s,
+        // which leaves route components stuck on their pending state.
+        const mapDeps = /(__vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=\[)([\s\S]*?)(\]\)\)\))/;
+        if (mapDeps.test(code)) {
+          const fixed = code.replace(mapDeps, (_all, head, body, tail) =>
+            head + body.replaceAll(`"${BASE_PATH}/assets/`, '"assets/') + tail,
+          );
+          if (fixed !== code) {
+            code = fixed;
+            changed = true;
+          }
         }
 
         // Basepaths
