@@ -33,7 +33,6 @@ services:
     # HTTP Server Timeouts ared defined by node defaults, can be overridden by (not implemented)
     # env variables if required
       APP_TITLE: LibreChat
-      DOMAIN_HOST: ${SERVICES_LIBRECHAT_DOMAIN_HOST}
       HOST: 0.0.0.0
       PORT: 3080
       TRUST_PROXY: 2
@@ -44,9 +43,6 @@ services:
       CUSTOM_FOOTER: ${SERVICES_LIBRECHAT_CUSTOM_FOOTER}
       SHOW_BIRTHDAY_ICON: true
       # - ANALYTICS_GTM_ID: no tracking applied currently
-
-      # Proxy (Traefik)
-      LIBRECHAT_MIDDLEWARE_LABEL: ${SERVICES_LIBRECHAT_LIBRECHAT_MIDDLEWARE_LABEL}
 
       # Credentials: CREDS_KEY and CREDS_IV are used to encrypt supported credentials stored in the db
       CREDS_IV: ${SERVICES_LIBRECHAT_CREDS_IV}
@@ -79,8 +75,6 @@ services:
       DOMAIN_CLIENT: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       DOMAIN_SERVER: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
-      ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
-      ADMIN_PANEL_PORT: 3000
       NO_INDEX: true
 
       # Logging:
@@ -101,17 +95,13 @@ services:
      # - HTTPS_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
      # - NO_PROXY: Comma-separated hosts, domains, or IP ranges that supported server-side clients should bypass.
       TITLE_CONVO: true # Enable titling for all endpoints.
-      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST}
-      DB_PORT: 5432
       RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL:-http://rag-api:8000}
-      PLATFORM_NETWORK: ${SERVICES_LIBRECHAT_PLATFORM_NETWORK}
       NODE_ENV: production
       DEPLOYMENT_SKILLS_DIR: ./skill
       DEPLOYMENT_PLUGINS_DIR: ./plugin
       DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
       DEPLOYMENT_PLUGIN_HOOKS: true
       SCHEDULES_SINGLE_PROCESS: true
-      DOCKER_HOST: ${SERVICES_LIBRECHAT_DOCKER_HOST}
       CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES: 262144000
       FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
 
@@ -134,7 +124,8 @@ services:
       USE_REDIS_STREAMS: true
       STREAM_DELTA_COALESCE_MS: 25
       REDIS_URI: ${SERVICES_LIBRECHAT_REDIS_URI}
-      REDIS_URL: ${SERVICES_LIBRECHAT_REDIS_URL}
+     # - REDIS_URL: LibreChat liest ausschliesslich REDIS_URI. Weder der Quellcode
+     #   noch ioredis, connect-redis oder keyv werten REDIS_URL aus.
       # Der redis-Service ist eine Einzelinstanz. Bei nur einer URI erzwingt
       # USE_REDIS_CLUSTER=true den Cluster-Modus -> CLUSTER-Kommandos laufen ins Leere.
       USE_REDIS_CLUSTER: false
@@ -232,8 +223,10 @@ services:
       EMAIL_FROM_NAME: Librechat
       EMAIL_FROM: ${SERVICES_LIBRECHAT_EMAIL_FROM}
 
-    # Memory: Supermemory or other self-hosted solution?
-      SUPERMEMORY_API_KEY: ${SERVICES_LIBRECHAT_SUPERMEMORY_API_KEY}
+    # Memory
+    # LibreChats eingebautes Memory wird ueber den memory-Block in librechat.yaml
+    # konfiguriert, nicht ueber Env. SUPERMEMORY_API_KEY stand hier ohne Wirkung:
+    # weder der Quellcode noch librechat.yaml lesen die Variable.
 
     # File storage & CDN -> Use backblaze
     # - AWS_ACCESS_KEY_ID: IAM user access key ID. Optional if using IRSA.
@@ -283,7 +276,6 @@ services:
     # Meilisearch Volltextsuche
       SEARCH: true
       MEILI_HOST: http://meilisearch:7700
-      MEILI_NO_ANALYTICS: true
       MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
       MEILI_NO_SYNC: true # prevents LibreChat from attempting a database indexing sync with Meilisearch
 
@@ -552,14 +544,15 @@ services:
     depends_on:
       - vectordb
     environment:
-      DB_HOST: ${SERVICES_LIBRECHAT_DB_HOST:-vectordb}
+      # Vault-Key bewusst mit RAG_-Praefix: der Container-seitige Name DB_HOST ist
+      # von rag_api vorgegeben und nicht aenderbar, der Vault-Name ist frei waehlbar.
+      DB_HOST: ${SERVICES_LIBRECHAT_RAG_DB_HOST:-vectordb}
       DB_PORT: 5432
       POSTGRES_USER: ${SERVICES_LIBRECHAT_POSTGRES_USER}
       POSTGRES_PASSWORD: ${SERVICES_LIBRECHAT_POSTGRES_PASSWORD}
       POSTGRES_DB: ${SERVICES_LIBRECHAT_POSTGRES_DB}
       RAG_HOST: 0.0.0.0 # -> clarify, if this is valid
       RAG_PORT: 8000
-      RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL}
       COLLECTION_NAME: librechat
       EMBEDDINGS_PROVIDER: openai # openai, azure, huggingface, huggingfacetei, or ollama
       EMBEDDINGS_MODEL: embedding-openai
