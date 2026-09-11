@@ -27,14 +27,14 @@ services:
       - SESSION_EXPIRY: 1000 * 60 * 15
       - REFRESH_TOKEN_EXPIRY: (1000 * 60 * 60 * 24) * 7
       - SESSION_COOKIE_SECURE: false
-      - JWT_SECRET: ${JWT_SECRET}
-      - JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      - JWT_SECRET: ${SERVICES_LIBRECHAT_JWT_SECRET}
+      - JWT_REFRESH_SECRET: ${SERVICES_LIBRECHAT_JWT_REFRESH_SECRET}
 
     # Base Config
     # HTTP Server Timeouts ared defined by node defaults, can be overridden by (not implemented)
     # env variables if required
       - APP_TITLE: LibreChat
-      - DOMAIN_HOST: ${DOMAIN_HOST}
+      - DOMAIN_HOST: ${SERVICES_LIBRECHAT_DOMAIN_HOST}
       - HOST: 0.0.0.0
       - PORT: 3080
       - TRUST_PROXY: 2
@@ -42,7 +42,7 @@ services:
       # authentication on the /oauth, /api/auth, and /api/share route trees. disabled by default.
       # Enable this setting only when a trusted reverse proxy strips every incoming X-Tenant-Id
       # value and sets the authoritative tenant ID itself.
-      - CUSTOM_FOOTER: ${CUSTOM_FOOTER}
+      - CUSTOM_FOOTER: ${SERVICES_LIBRECHAT_CUSTOM_FOOTER}
       - SHOW_BIRTHDAY_ICON: true
       # - ANALYTICS_GTM_ID: no tracking applied currently
 
@@ -50,8 +50,8 @@ services:
       - LIBRECHAT_MIDDLEWARE_LABEL: ${SERVICES_LIBRECHAT_LIBRECHAT_MIDDLEWARE_LABEL}
 
       # Credentials: CREDS_KEY and CREDS_IV are used to encrypt supported credentials stored in the db
-      - CREDS_IV: ${CREDS_IV}
-      - CREDS_KEY: ${CREDS_KEY}
+      - CREDS_IV: ${SERVICES_LIBRECHAT_CREDS_IV}
+      - CREDS_KEY: ${SERVICES_LIBRECHAT_CREDS_KEY}
       - LIBRECHAT_TEMP_CREDENTIALS_PATH: /app/data/.env.temp
 
       # Static File handling and caching
@@ -78,7 +78,7 @@ services:
       - DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.certain.cc?
       - DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.certain.cc?
       - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
-      - ADMIN_PANEL_SESSION_SECRET: ${ADMIN_PANEL_SESSION_SECRET}
+      - ADMIN_PANEL_SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
       - ADMIN_PANEL_PORT: 3000
       - NO_INDEX: true
 
@@ -114,9 +114,9 @@ services:
       - FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
 
     # MCP Server
-      - MCP_GATEWAY_API_KEY_ADMIN: ${MCP_GATEWAY_API_KEY_ADMIN}
-      - MCP_GATEWAY_AUTH: ${MCP_GATEWAY_AUTH}
-      - MCP_URL: ${MCP_URL}
+      - MCP_GATEWAY_API_KEY_ADMIN: ${SERVICES_LIBRECHAT_MCP_GATEWAY_API_KEY_ADMIN}
+      - MCP_GATEWAY_AUTH: ${SERVICES_LIBRECHAT_MCP_GATEWAY_AUTH}
+      - MCP_URL: ${SERVICES_LIBRECHAT_MCP_URL}
       - MCP_OAUTH_ON_AUTH_ERROR: true
       - MCP_OAUTH_DETECTION_TIMEOUT: 5000
       - MCP_OAUTH_HANDLING_TIMEOUT: 600000
@@ -151,12 +151,12 @@ services:
       - REDIS_USE_ALTERNATIVE_DNS_LOOKUP: true
 
     # OIDC
-      - OIDC_HOST: ${OIDC_HOST}
+      - OIDC_HOST: ${SERVICES_LIBRECHAT_OIDC_HOST}
       - OPENID_GENERATE_NONCE: true
-      - OPENID_CLIENT_ID: ${OPENID_CLIENT_ID}
-      - OPENID_CLIENT_SECRET: ${OPENID_CLIENT_SECRET}
-      - OPENID_SESSION_SECRET: ${OPENID_SESSION_SECRET}
-      - OPENID_ISSUER: ${OPENID_ISSUER}
+      - OPENID_CLIENT_ID: ${SERVICES_LIBRECHAT_OPENID_CLIENT_ID}
+      - OPENID_CLIENT_SECRET: ${SERVICES_LIBRECHAT_OPENID_CLIENT_SECRET}
+      - OPENID_SESSION_SECRET: ${SERVICES_LIBRECHAT_OPENID_SESSION_SECRET}
+      - OPENID_ISSUER: ${SERVICES_LIBRECHAT_OPENID_ISSUER}
       - OPENID_CALLBACK_URL: /oauth/openid/callback
       - OPENID_SCOPE: openid profile email
       - OPENID_BUTTON_LABEL: Login with Tailscale
@@ -199,8 +199,8 @@ services:
      # - OPENID_GRAPH_SCOPES: User.Read,People.Read,GroupMember.Read.All,User.ReadBasic.All
      # - GRAPH_API_SCOPES: https://graph.microsoft.com/.default
       - OPENID_IMAGE_URL: https://tailscale.com/favicon.ico
-      - GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CLIENT_ID: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET: ${SERVICES_LIBRECHAT_GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL: /oauth/google/callback
      # - DISCORD_CLIENT_ID:
      # - DISCORD_CLIENT_SECRET:
@@ -214,18 +214,18 @@ services:
 
     # Email Service
       - EMAIL_SERVICE: Gmail
-      - EMAIL_HOST: ${EMAIL_HOST}
+      - EMAIL_HOST: ${SERVICES_LIBRECHAT_EMAIL_HOST}
       - EMAIL_PORT: 587
       - EMAIL_ENCRYPTION: starttls
-      - EMAIL_ENCRYPTION_HOSTNAME: ${EMAIL_ENCRYPTION_HOSTNAME}
+      - EMAIL_ENCRYPTION_HOSTNAME: ${SERVICES_LIBRECHAT_EMAIL_ENCRYPTION_HOSTNAME}
       - EMAIL_ALLOW_SELFSIGNED: true
-      - EMAIL_USERNAME: ${EMAIL_USERNAME}
-      - EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      - EMAIL_USERNAME: ${SERVICES_LIBRECHAT_EMAIL_USERNAME}
+      - EMAIL_PASSWORD: ${SERVICES_LIBRECHAT_EMAIL_PASSWORD}
       - EMAIL_FROM_NAME: Librechat
-      - EMAIL_FROM: ${EMAIL_FROM}
+      - EMAIL_FROM: ${SERVICES_LIBRECHAT_EMAIL_FROM}
 
     # Memory: Supermemory or other self-hosted solution?
-      - SUPERMEMORY_API_KEY: ${SUPERMEMORY_API_KEY}
+      - SUPERMEMORY_API_KEY: ${SERVICES_LIBRECHAT_SUPERMEMORY_API_KEY}
 
     # File storage & CDN -> Use backblaze
     # - AWS_ACCESS_KEY_ID: IAM user access key ID. Optional if using IRSA.
@@ -252,7 +252,7 @@ services:
      # - ASSISTANTS_API_KEY: OpenAI API key for Assistants API. Docs: https://www.librechat.ai/docs/configuration/pre_configured_ai/assistants
 
     # Web-Search & Reranker
-      - TAVILY_API_KEY: ${TAVILY_API_KEY}
+      - TAVILY_API_KEY: ${SERVICES_LIBRECHAT_TAVILY_API_KEY}
       #TAVILY_SEARCH_URL:
       #TAVILY_EXTRACT_URL:
       - SEARXNG_INSTANCE_URL: http://searxng:8080
@@ -264,9 +264,9 @@ services:
       # FIRECRAWL_API_KEY:
       # FIRECRAWL_API_URL: Only needed for custom Firecrawl instances.
       # FIRECRAWL_VERSION: Firecrawl API version (v0 or v1).
-      - JINA_API_KEY: ${JINA_API_KEY}
+      - JINA_API_KEY: ${SERVICES_LIBRECHAT_JINA_API_KEY}
       # - JINA_API_URL: Custom Jina API URL (optional)
-      - COHERE_API_KEY: ${COHERE_API_KEY}
+      - COHERE_API_KEY: ${SERVICES_LIBRECHAT_COHERE_API_KEY}
       # - OMNIROUTE_SEARCH_URL: ${OMNIROUTE_SEARCH_URL}
       # - OPENWEATHER_API_KEY:
 
@@ -274,7 +274,7 @@ services:
       - SEARCH: true
       - MEILI_HOST: http://meilisearch:7700
       - MEILI_NO_ANALYTICS: true
-      - MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      - MEILI_MASTER_KEY: ${SERVICES_LIBRECHAT_MEILI_MASTER_KEY}
       - MEILI_NO_SYNC: true # prevents LibreChat from attempting a database indexing sync with Meilisearch
 
     # Content Security Policy (CSP)
