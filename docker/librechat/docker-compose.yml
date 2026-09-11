@@ -97,10 +97,13 @@ services:
       TITLE_CONVO: true # Enable titling for all endpoints.
       RAG_API_URL: ${SERVICES_LIBRECHAT_RAG_API_URL:-http://rag-api:8000}
       NODE_ENV: production
-      DEPLOYMENT_SKILLS_DIR: ./skill
-      DEPLOYMENT_PLUGINS_DIR: ./plugin
-      DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
-      DEPLOYMENT_PLUGIN_HOOKS: true
+     # Plugins/Skills: LibreChat verweigert den Start, wenn diese Verzeichnisse
+     # nicht existieren -- "Deployment plugins directory could not be read".
+     # Kommen zurueck, sobald die Verzeichnisse als Volume bereitstehen.
+     # - DEPLOYMENT_SKILLS_DIR: ./skill
+     # - DEPLOYMENT_PLUGINS_DIR: ./plugin
+     # - DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
+     # - DEPLOYMENT_PLUGIN_HOOKS: true
       SCHEDULES_SINGLE_PROCESS: true
       CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES: 262144000
       FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
