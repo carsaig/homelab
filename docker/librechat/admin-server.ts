@@ -113,10 +113,19 @@ function patchDistFiles() {
           changed = true;
         }
 
-        // Modulepreload helper in main-*.js
-        if (code.includes('ua=function(e){return`/`+e}')) {
-          code = code.replaceAll('ua=function(e){return`/`+e}', `ua=function(e){return\`${BASE_PATH}/\`+e.replace(/^\\//, '')}`);
-          changed = true;
+        // Modulepreload helper in main-*.js. It receives two kinds of input: the build's
+        // own dependency lists, which are relative, and the router manifest entries, which
+        // the server already serialises with the base applied. Prepending unconditionally
+        // doubles the latter, so only add the base when it is not there yet.
+        const preloadHelper = `ua=function(e){var p=e.replace(/^\\//, '');var b='${BASE_PATH}'.replace(/^\\//, '');return p===b||p.startsWith(b+'/')?'/'+p:'${BASE_PATH}/'+p}`;
+        for (const variant of [
+          'ua=function(e){return`/`+e}',
+          `ua=function(e){return\`${BASE_PATH}/\`+e.replace(/^\\//, '')}`,
+        ]) {
+          if (code.includes(variant) && variant !== preloadHelper) {
+            code = code.replaceAll(variant, preloadHelper);
+            changed = true;
+          }
         }
 
         // Fix TanStack Start hydration invariant crashes
