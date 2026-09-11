@@ -154,6 +154,20 @@ const server = Bun.serve({
       for (const [k, v] of Object.entries(NO_CACHE)) {
         patched.headers.set(k, v);
       }
+
+      // The session cookie is issued for the mount path, but the bundle is built for the
+      // root and therefore calls its server functions at /_serverFn/... . The browser
+      // withholds a cookie scoped to the mount path from those requests, so the sign-in
+      // exchange never sees the PKCE verifier it stored moments earlier. Widen the scope
+      // to cover both.
+      const setCookies = patched.headers.getSetCookie?.() ?? [];
+      if (setCookies.length > 0) {
+        patched.headers.delete('set-cookie');
+        for (const cookie of setCookies) {
+          patched.headers.append('set-cookie', cookie.replace(/;\s*Path=[^;]*/i, '; Path=/'));
+        }
+      }
+
       applySecurityHeaders(patched.headers);
       return patched;
     },
