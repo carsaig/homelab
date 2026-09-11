@@ -1,6 +1,5 @@
 import { Glob } from 'bun';
 import { join } from 'node:path';
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   metricsResponse,
   httpRequestsTotal,
@@ -41,12 +40,22 @@ const LONG_CACHE: Record<string, string> = {
   'Cache-Control': `public, max-age=${maxAge}, s-maxage=${sMaxAge}`,
 };
 
+const CACHE_RESET_ID = 'v4';
+const CACHE_RESET_COOKIE = 'admin_cache_reset';
+
 const NEVER_CACHE = new Set(['manifest.json', 'sw.js', 'robots.txt']);
+
+// Assets are rewritten as they are served, so their bytes change while the build's
+// content hash in the file name does not. Pinning them in browsers hands out a stale
+// copy that no request can correct; let them be cached but revalidated against an ETag.
+const REVALIDATE: Record<string, string> = {
+  'Cache-Control': `public, max-age=0, s-maxage=${sMaxAge}, must-revalidate`,
+};
 
 function getCacheHeaders(filePath: string): Record<string, string> {
   const fileName = filePath.split('/').pop() ?? '';
   if (NEVER_CACHE.has(fileName)) return NO_CACHE;
-  if (filePath.startsWith('assets/')) return LONG_CACHE;
+  if (filePath.startsWith('assets/')) return REVALIDATE;
   return {};
 }
 
@@ -92,34 +101,6 @@ async function withHttpMetrics(
   return res;
 }
 
-// The bundle is built for the root and calls its server functions at /_serverFn/... .
-// Left alone those requests leave the panel's path, where its session cookie does not
-// apply and where the chat application answers instead. Move them under the mount path;
-// incoming requests have that prefix stripped again before they reach the router.
-function prefixServerFunctionCalls(): void {
-  if (!BASE_PATH) return;
-  const assetsDir = join(CLIENT_DIR, 'assets');
-  try {
-    for (const file of readdirSync(assetsDir)) {
-      if (!file.endsWith('.js')) continue;
-      const path = join(assetsDir, file);
-      const code = readFileSync(path, 'utf8');
-      if (!code.includes('/_serverFn/')) continue;
-      const prefixed = code
-        .replaceAll(`${BASE_PATH}/_serverFn/`, '/_serverFn/')
-        .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`);
-      if (prefixed !== code) {
-        writeFileSync(path, prefixed);
-        console.log('[admin-panel] Server function calls prefixed in', file);
-      }
-    }
-  } catch (err) {
-    console.error('[admin-panel] Error prefixing server function calls:', err);
-  }
-}
-
-prefixServerFunctionCalls();
-
 async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Promise<Response>>> {
   const routes: Record<string, (req: Request) => Promise<Response>> = {};
   for await (const path of new Glob('**/*').scan(CLIENT_DIR)) {
@@ -132,12 +113,26 @@ async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Pro
           let body: any = file;
           if (path.endsWith('.js')) {
             let code = await file.text();
-            if (code.includes('/assets/')) {
-              code = code.replaceAll('/admin/assets/', '/assets/').replaceAll('/assets/', `${BASE_PATH}/assets/`);
-              body = code;
+            const rewritten = code
+              .replaceAll(`${BASE_PATH}/assets/`, '/assets/')
+              .replaceAll('/assets/', `${BASE_PATH}/assets/`)
+              // Server functions are called at /_serverFn/... because the bundle is built
+              // for the root. Keep them inside the panel's path, where its session cookie
+              // applies and where the chat application does not answer instead.
+              .replaceAll(`${BASE_PATH}/_serverFn/`, '/_serverFn/')
+              .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`);
+            if (rewritten !== code) {
+              body = rewritten;
             }
           }
-          const res = new Response(body, { headers: { 'Content-Type': file.type, ...cache } });
+          const etag =
+            typeof body === 'string' ? `"${Bun.hash(body).toString(16)}"` : undefined;
+          if (etag && req.headers.get('if-none-match') === etag) {
+            return new Response(null, { status: 304, headers: { ...cache, ETag: etag } });
+          }
+          const res = new Response(body, {
+            headers: { 'Content-Type': file.type, ...cache, ...(etag ? { ETag: etag } : {}) },
+          });
           applySecurityHeaders(res.headers);
           return res;
         });
@@ -195,6 +190,18 @@ const server = Bun.serve({
           'set-cookie',
           'admin-session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax',
         );
+
+        // Earlier revisions let browsers pin the rewritten assets for two days, so a stale
+        // bundle can outlive any correction on the server. Drop the cached copies once per
+        // browser and remember that it happened; normal revalidation takes over afterwards.
+        const cookies = req.headers.get('cookie') ?? '';
+        if (!cookies.includes(`${CACHE_RESET_COOKIE}=${CACHE_RESET_ID}`)) {
+          patched.headers.set('Clear-Site-Data', '"cache"');
+          patched.headers.append(
+            'set-cookie',
+            `${CACHE_RESET_COOKIE}=${CACHE_RESET_ID}; Path=${BASE_PATH}; Max-Age=31536000; SameSite=Lax`,
+          );
+        }
       }
 
       applySecurityHeaders(patched.headers);
