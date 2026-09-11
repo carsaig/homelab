@@ -1,5 +1,6 @@
 import { Glob } from 'bun';
 import { join } from 'node:path';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   metricsResponse,
   httpRequestsTotal,
@@ -91,6 +92,34 @@ async function withHttpMetrics(
   return res;
 }
 
+// The bundle is built for the root and calls its server functions at /_serverFn/... .
+// Left alone those requests leave the panel's path, where its session cookie does not
+// apply and where the chat application answers instead. Move them under the mount path;
+// incoming requests have that prefix stripped again before they reach the router.
+function prefixServerFunctionCalls(): void {
+  if (!BASE_PATH) return;
+  const assetsDir = join(CLIENT_DIR, 'assets');
+  try {
+    for (const file of readdirSync(assetsDir)) {
+      if (!file.endsWith('.js')) continue;
+      const path = join(assetsDir, file);
+      const code = readFileSync(path, 'utf8');
+      if (!code.includes('/_serverFn/')) continue;
+      const prefixed = code
+        .replaceAll(`${BASE_PATH}/_serverFn/`, '/_serverFn/')
+        .replaceAll('/_serverFn/', `${BASE_PATH}/_serverFn/`);
+      if (prefixed !== code) {
+        writeFileSync(path, prefixed);
+        console.log('[admin-panel] Server function calls prefixed in', file);
+      }
+    }
+  } catch (err) {
+    console.error('[admin-panel] Error prefixing server function calls:', err);
+  }
+}
+
+prefixServerFunctionCalls();
+
 async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Promise<Response>>> {
   const routes: Record<string, (req: Request) => Promise<Response>> = {};
   for await (const path of new Glob('**/*').scan(CLIENT_DIR)) {
@@ -155,19 +184,6 @@ const server = Bun.serve({
       const patched = new Response(body, res);
       for (const [k, v] of Object.entries(NO_CACHE)) {
         patched.headers.set(k, v);
-      }
-
-      // The session cookie is issued for the mount path, but the bundle is built for the
-      // root and therefore calls its server functions at /_serverFn/... . The browser
-      // withholds a cookie scoped to the mount path from those requests, so the sign-in
-      // exchange never sees the PKCE verifier it stored moments earlier. Widen the scope
-      // to cover both.
-      const setCookies = patched.headers.getSetCookie?.() ?? [];
-      if (setCookies.length > 0) {
-        patched.headers.delete('set-cookie');
-        for (const cookie of setCookies) {
-          patched.headers.append('set-cookie', cookie.replace(/;\s*Path=[^;]*/i, '; Path=/'));
-        }
       }
 
       applySecurityHeaders(patched.headers);
