@@ -10,6 +10,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      - PUBLIC_REPO_GUARD: off
+      # Docs: https://www.librechat.ai/docs/configuration/dotenv
       # Logins
       - ALLOW_SOCIAL_REGISTRATION: true
       - ALLOW_SOCIAL_LOGIN: true
@@ -17,43 +19,226 @@ services:
       - ALLOW_REGISTRATION: true
       - LOGIN_MAX: 1000
       - LOGIN_WINDOW: 1
+      - ALLOW_EMAIL_LOGIN_OVERRIDE: false
+      - ALLOW_PASSWORD_RESET: true
+      - ALLOW_ACCOUNT_DELETION: true
+      - ALLOW_UNVERIFIED_EMAIL_LOGIN: false
+      - MIN_PASSWORD_LENGTH: 14
+      - SESSION_EXPIRY: 1000 * 60 * 15
+      - REFRESH_TOKEN_EXPIRY: (1000 * 60 * 60 * 24) * 7
+      - SESSION_COOKIE_SECURE: false
+      - JWT_SECRET: ${JWT_SECRET}
+      - JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
 
     # Base Config
+    # HTTP Server Timeouts ared defined by node defaults, can be overridden by (not implemented)
+    # env variables if required
       - APP_TITLE: LibreChat
       - DOMAIN_HOST: ${DOMAIN_HOST}
-      - DOMAIN_CLIENT: http://localhost:3080
-      - DOMAIN_SERVER: http://localhost:3080
-      - DEBUG_CONSOLE: true
-      - DB_PORT: 5432
       - HOST: 0.0.0.0
       - PORT: 3080
-      - PLATFORM_NETWORK: dokploy-network
+      - TRUST_PROXY: 2
+      # - TRUST_TENANT_HEADER controls whether LibreChat accepts X-Tenant-Id before
+      # authentication on the /oauth, /api/auth, and /api/share route trees. disabled by default.
+      # Enable this setting only when a trusted reverse proxy strips every incoming X-Tenant-Id
+      # value and sets the authoritative tenant ID itself.
+      - CUSTOM_FOOTER: ${CUSTOM_FOOTER}
+      - SHOW_BIRTHDAY_ICON: true
+      # - ANALYTICS_GTM_ID: no tracking applied currently
+
+      # Proxy (Traefik)
+      - LIBRECHAT_MIDDLEWARE_LABEL: ${SERVICES_LIBRECHAT_LIBRECHAT_MIDDLEWARE_LABEL}
+
+      # Credentials: CREDS_KEY and CREDS_IV are used to encrypt supported credentials stored in the db
+      - CREDS_IV: ${CREDS_IV}
+      - CREDS_KEY: ${CREDS_KEY}
+      - LIBRECHAT_TEMP_CREDENTIALS_PATH: /app/data/.env.temp
+
+      # Static File handling and caching
+      - STATIC_CACHE_MAX_AGE: 172800
+      - STATIC_CACHE_S_MAX_AGE: "86400"
+      - DISABLE_COMPRESSION: true
       - ENABLE_STATIC_ASSET_BROTLI: true
       - ENABLE_IMAGE_OUTPUT_GZIP_SCAN: true
-      - DISABLE_COMPRESSION: true
-      - NODE_ENV: production
+      - INDEX_CACHE_CONTROL: no-cache, no-store, must-revalidate
+      - INDEX_PRAGMA: no-cache
+      - INDEX_EXPIRES: 0
+
+      # Database
+      - MONGO_URI: ${SERVICES_LIBRECHAT_MONGO_URI}
+      - MONGO_MAX_POOL_SIZE: 30
+      - MONGO_MIN_POOL_SIZE: 1
+      - MONGO_MAX_CONNECTING: 20
+      # - MONGO_MAX_IDLE_TIME_MS: -> unclear, needs a valid value
+      # - MONGO_WAIT_QUEUE_TIMEOUT_MS: -> unclear, needs a valid value
+      - MONGO_AUTO_INDEX: false # needs clarification
+      - MONGO_AUTO_CREATE: false # needs clraification
+
+      # Custom domain deployment
+      - DOMAIN_CLIENT: http://localhost:3080 # -> or public domain librechat.certain.cc?
+      - DOMAIN_SERVER: http://localhost:3080 # -> or public domain librechat.certain.cc?
+      - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
+      - ADMIN_PANEL_SESSION_SECRET: ${ADMIN_PANEL_SESSION_SECRET}
+      - ADMIN_PANEL_PORT: 3000
       - NO_INDEX: true
+
+      # Logging:
+      - DEBUG_CONSOLE: false
+      - DEBUG_LOGGING: true
+      - CONSOLE_LOG_LEVEL: debug
+      - LOG_TO_FILE: false
+      - CONSOLE_JSON: false
+      - CONSOLE_JSON_STRING_LENGTH: 255
+      - LIBRECHAT_LOG_DIR: /app/logs
+      - MEM_DIAG: true
+      - AGENT_DEBUG_LOGGING: true
+
+      # other general config
+      - ENDPOINTS: agents,assistants,gptPlugins,custom,google,anthropic,azureOpenAI,openAI
+     # - PROXY: Outbound proxy for supported server-side clients. Not in use.
+     # - HTTP_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
+     # - HTTPS_PROXY: HTTP proxy fallback used by supported server-side clients when PROXY is unset.
+     # - NO_PROXY: Comma-separated hosts, domains, or IP ranges that supported server-side clients should bypass.
+      - TITLE_CONVO: true # Enable titling for all endpoints.
+      - DB_HOST: ${DB_HOST}
+      - DB_PORT: 5432
+      - PLATFORM_NETWORK: dokploy-network
+      - NODE_ENV: production
       - DEPLOYMENT_SKILLS_DIR: ./skill
       - DEPLOYMENT_PLUGINS_DIR: ./plugin
       - DEPLOYMENT_PLUGIN_DATA_DIR: ./data/plugins
       - DEPLOYMENT_PLUGIN_HOOKS: true
-      - ENDPOINTS: agents,assistants,gptPlugins,custom
+      - SCHEDULES_SINGLE_PROCESS: true
+      - DOCKER_HOST: ${SERVICES_LIBRECHAT_DOCKER_HOST}
+      - CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES: 262144000
+      - FILE_PREVIEW_MAX_EXTRACT_BYTES: 2097152
+
+    # MCP Server
+      - MCP_GATEWAY_API_KEY_ADMIN: ${MCP_GATEWAY_API_KEY_ADMIN}
+      - MCP_GATEWAY_AUTH: ${MCP_GATEWAY_AUTH}
+      - MCP_URL: ${MCP_URL}
+      - MCP_OAUTH_ON_AUTH_ERROR: true
+      - MCP_OAUTH_DETECTION_TIMEOUT: 5000
+      - MCP_OAUTH_HANDLING_TIMEOUT: 600000
+      - MCP_OAUTH_FLOW_TTL: 900000
+      - MCP_CONNECTION_CHECK_TTL: 30000
+      - MCP_TOOLS_LIST_MAX_PAGES: 50
+     # - MCP_SKIP_CODE_CHALLENGE_CHECK: false -> needs clarification
+      - MCP_STREAMABLE_HTTP_MAX_RESPONSE_BYTES: 16777216
+      - MCP_STREAMABLE_HTTP_MAX_LINE_BYTES: 5242880
+
+    # REDIS
       - USE_REDIS: true
       - USE_REDIS_STREAMS: true
-      - TRUST_PROXY: 2
-      - SCHEDULES_SINGLE_PROCESS: true
+      - STREAM_DELTA_COALESCE_MS: 25
+      - REDIS_URI: ${SERVICES_LIBRECHAT_REDIS_URI}
+      - REDIS_URL: ${SERVICES_LIBRECHAT_REDIS_URL}
+      - USE_REDIS_CLUSTER: true
+      - REDIS_CLUSTER_SAFE_DELETE: true
+      # - REDIS_USERNAME: currently not in use?
+      # - REDIS_PASSWORD: currently not in use?
+      # - REDIS_CA: not in use
+      - REDIS_KEY_PREFIX: librechat-prod-v2
+    # - REDIS_KEY_PREFIX_VAR: K_REVISION -> requires clarification
+      - REDIS_MAX_LISTENERS: 40
+      - REDIS_READONLY_RECOVERY_INTERVAL: 5000
+      - REDIS_PING_INTERVAL: 300
+      - FORCED_IN_MEMORY_CACHE_NAMESPACES: ROLES,MESSAGES
+      - AUTH_USER_CACHE_MODE: off
+      - USER_PRINCIPALS_CACHE_TTL_MS: 300000
+      - USER_PRINCIPALS_LOCK_TTL_MS: 5000
+      - USER_PRINCIPALS_LOCK_WAIT_MS: 5000
+      - REDIS_USE_ALTERNATIVE_DNS_LOOKUP: true
 
     # OIDC
-      - OIDC_HOST: idp.tortoise-bramble.ts.net:185.40.234.198
+      - OIDC_HOST: ${OIDC_HOST}
       - OPENID_GENERATE_NONCE: true
-      - OPENID_ISSUER: https://idp.tortoise-bramble.ts.net
+      - OPENID_CLIENT_ID: ${OPENID_CLIENT_ID}
+      - OPENID_CLIENT_SECRET: ${OPENID_CLIENT_SECRET}
+      - OPENID_SESSION_SECRET: ${OPENID_SESSION_SECRET}
+      - OPENID_ISSUER: ${OPENID_ISSUER}
       - OPENID_CALLBACK_URL: /oauth/openid/callback
       - OPENID_SCOPE: openid profile email
       - OPENID_BUTTON_LABEL: Login with Tailscale
+      - OPENID_AUDIENCE: https://api.librechat.com # -> requires clarification
+      - OPENID_REQUIRED_ROLE: admin,teacher,student,user # -> requires clarification
+     # - OPENID_REQUIRED_ROLE_TOKEN_KIND: requires clarification
+     # - OPENID_REQUIRED_ROLE_PARAMETER_PATH: requires clarification
+     # - OPENID_ADMIN_ROLE: admin
+     # - OPENID_ADMIN_ROLE_TOKEN_KIND: requires clarification
+     # - OPENID_ADMIN_ROLE_PARAMETER_PATH: requires clarification
+     # - OPENID_ROLE_SYNC_ENABLED: false -> requires clarification
+     # - OPENID_ROLE_SYNC_API_ENABLED: false -> requires clarification
+     # - OPENID_ROLE_SYNC_SOURCE: id # id, userinfo or access.
+     # - OPENID_ROLE_SYNC_CLAIM: requires clarification
+     # - OPENID_ROLE_SYNC_ROLE_PRIORITY: admin,teacher,student,user
+     # - OPENID_ROLE_SYNC_FALLBACK_ROLE: user
+     # - OPENID_USE_END_SESSION_ENDPOINT: true
+     # - OPENID_MAX_LOGOUT_URL_LENGTH: 2000
+     # - OPENID_AUTO_REDIRECT: true
+     # - OPENID_USE_PKCE: true
+     # - OPENID_POST_LOGOUT_REDIRECT_URI: ${DOMAIN_CLIENT}/login
+     # - OPENID_CLOCK_TOLERANCE: 300
+     # - DEBUG_OPENID_REQUESTS: false
+     # - OPENID_USERNAME_CLAIM: needs clarification
+     # - OPENID_NAME_CLAIM: needs clarification
+     # - OPENID_EMAIL_CLAIM: defaults to: email → preferred_username → upn. -> requires clarification
+     # - OPENID_REUSE_TOKENS: false
+     # - OPENID_SCOPE: api://librechat/.default openid profile email offline_access -> requires clarification
+     # - OPENID_AUDIENCE: https://api.librechat.com -> requires clarification
+     # - OPENID_REUSE_MAX_SESSION_AGE_MS: 900000
+     # - OPENID_REFRESH_BRIDGE_GRACE_MS: 60000
+     # - OPENID_JWKS_URL_CACHE_ENABLED: true
+     # - OPENID_JWKS_URL_CACHE_TIME: 600000
+     # - OPENID_ON_BEHALF_FLOW_FOR_USERINFO_REQUIRED: true
+     # - OPENID_ON_BEHALF_FLOW_USERINFO_SCOPE: user.read
+     # - OPENID_USE_END_SESSION_ENDPOINT: true
+     # - OPENID_MAX_LOGOUT_URL_LENGTH: 2000
+     # - USE_ENTRA_ID_FOR_PEOPLE_SEARCH: true
+     # - ENTRA_ID_INCLUDE_OWNERS_AS_MEMBERS: false
+     # - OPENID_GRAPH_SCOPES: User.Read,People.Read,GroupMember.Read.All,User.ReadBasic.All
+     # - GRAPH_API_SCOPES: https://graph.microsoft.com/.default
       - OPENID_IMAGE_URL: https://tailscale.com/favicon.ico
+      - GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL: /oauth/google/callback
+     # - DISCORD_CLIENT_ID:
+     # - DISCORD_CLIENT_SECRET:
+     # - DISCORD_CALLBACK_URL: /oauth/discord/callback
+     # - FACEBOOK_CLIENT_ID:
+     # - FACEBOOK_CLIENT_SECRET:
+     # - FACEBOOK_CALLBACK_URL: /oauth/facebook/callback
+     # - GITHUB_CLIENT_ID:
+     # - GITHUB_CLIENT_SECRET:
+     # - GITHUB_CALLBACK_URL:
+
+    # Email Service
+      - EMAIL_SERVICE: Gmail
+      - EMAIL_HOST: ${EMAIL_HOST}
+      - EMAIL_PORT: 587
+      - EMAIL_ENCRYPTION: starttls
+      - EMAIL_ENCRYPTION_HOSTNAME: ${EMAIL_ENCRYPTION_HOSTNAME}
+      - EMAIL_ALLOW_SELFSIGNED: true
+      - EMAIL_USERNAME: ${EMAIL_USERNAME}
+      - EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      - EMAIL_FROM_NAME: Librechat
+      - EMAIL_FROM: ${EMAIL_FROM}
+
+    # Memory: Supermemory or other self-hosted solution?
+      - SUPERMEMORY_API_KEY: ${SUPERMEMORY_API_KEY}
+
+    # File storage & CDN -> Use backblaze
+    # - AWS_ACCESS_KEY_ID: IAM user access key ID. Optional if using IRSA.
+    # - AWS_SECRET_ACCESS_KEY: IAM user secret access key. Optional if using IRSA.
+    # - AWS_REGION: eu-central-003
+    # - AWS_BUCKET_NAME: librechat
+    # - AWS_ENDPOINT_URL: https://s3.eu-central-003.backblazeb2.com
+    # - AWS_FORCE_PATH_STYLE: true
+    # - CLOUDFRONT_KEY_PAIR_ID: CloudFront public key pair ID. Required for signed cookies and signed CloudFront download URLs.
+    # - CLOUDFRONT_PRIVATE_KEY: CloudFront private key PEM. Required for signed cookies and signed CloudFront download URLs. Preserve PEM newlines when injecting this secret.
 
     # Inference
+    # custom endpoint config: https://www.librechat.ai/docs/quick_start/custom_endpoints
       - LLM_PROVIDER: Omniroute
       - LLM_GATEWAY_NAME: Omniroute
       - LLM_MODEL: coding-adaptive
@@ -62,23 +247,202 @@ services:
       - MODEL_DISPLAY_LABEL: Omniroute
       - MCP_URL: http://bifrost:8080/mcp
      # - COHERE_API_KEY: ${COHERE_API_KEY:-}
+     # - GEMINI_API_KEY:
+     # - GEMINI_IMAGE_MODEL:
+     # - ASSISTANTS_API_KEY: OpenAI API key for Assistants API. Docs: https://www.librechat.ai/docs/configuration/pre_configured_ai/assistants
 
-    # Web-Suche & Reranker (SearXNG)
+    # Web-Search & Reranker
+      - TAVILY_API_KEY: ${TAVILY_API_KEY}
       #TAVILY_SEARCH_URL:
       #TAVILY_EXTRACT_URL:
       - SEARXNG_INSTANCE_URL: http://searxng:8080
-      # SEARXNG_API_KEY=
+      # SEARXNG_API_KEY:
+      # SERPER_API_KEY: # https://serper.dev/api-keys
+      # KEENABLE_API_KEY: Optional Keenable API key for search and page fetch.
+      # KEENABLE_API_URL: Optional custom Keenable search API URL.
+      # KEENABLE_FETCH_URL: Optional custom Keenable page-fetch API URL used when scraperProvider is keenable.
+      # FIRECRAWL_API_KEY:
+      # FIRECRAWL_API_URL: Only needed for custom Firecrawl instances.
+      # FIRECRAWL_VERSION: Firecrawl API version (v0 or v1).
+      - JINA_API_KEY: ${JINA_API_KEY}
+      # - JINA_API_URL: Custom Jina API URL (optional)
+      - COHERE_API_KEY: ${COHERE_API_KEY}
+      # - OMNIROUTE_SEARCH_URL: ${OMNIROUTE_SEARCH_URL}
+      # - OPENWEATHER_API_KEY:
 
     # Meilisearch Volltextsuche
       - SEARCH: true
       - MEILI_HOST: http://meilisearch:7700
+      - MEILI_NO_ANALYTICS: true
       - MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-      - RAG_API_URL: ${RAG_API_URL:-http://rag-api:8000}
-      - RAG_PORT: 8000
+      - MEILI_NO_SYNC: true # prevents LibreChat from attempting a database indexing sync with Meilisearch
 
-      # The API sends the browser back to ${ADMIN_PANEL_URL}/auth/openid/callback once
-      # the identity provider has authenticated an administrator. Without it the redirect
-      # falls back to the panel's container-internal address and the callback is lost.
+    # Content Security Policy (CSP)
+    # - CSP_ENABLED: true
+    # - CSP_REPORT_ONLY: true
+    # - CSP_REPORT_URI: ${CSP_REPORT_URI}
+    # - CSP_ALLOW_WASM: true
+    # - CSP_ALLOW_DATA_WORKERS: true
+    # - CSP_FRAME_ANCESTORS: "self"
+    # - CSP_ADDITIONAL_DIRECTIVES:
+
+    # File uploads
+    #  - FILE_UPLOAD_SSE_ENABLED: true
+    #  - REMOTE_FILE_FETCH_TIMEOUT_MS: 15000
+    #  - REMOTE_FILE_FETCH_MAX_BYTES: 536870912
+
+    # Code Interpreter
+    # https://www.librechat.ai/docs/features/code_interpreter
+    # https://github.com/LibreChat-AI/code-interpreter
+    #  - LIBRECHAT_CODE_API_KEY: API key for the Code Interpreter service. When set globally, provides access to all users.
+    #  - LIBRECHAT_CODE_BASEURL: Base URL for the normal stateless Code Interpreter service: ${LIBRECHAT_CODE_BASEURL}
+    #  - LIBRECHAT_CODE_BASEURL_STATEFUL: Default Code Interpreter base URL for highly experimental stateful
+    # Agent sessions when no named statefulCodeSessions environment is selected. The service must advertise the stateful profile.
+    #  - CODE_SANDBOX_PREWARM: Prewarm selected stateful sandboxes in parallel with model generation. Set to false to disable. Default: true.
+    #  - CODE_SANDBOX_COLD_AFTER_MS: Time in milliseconds before LibreChat treats a tracked sandbox as cold. Default: 2100000 (35 minutes).
+    #  - LIBRECHAT_CODE_SANDBOX_OUTPUT_MAX_SIZE: Sandbox stdout budget in bytes used to derive image-read window sizes. Match the runner's
+    # SANDBOX_OUTPUT_MAX_SIZE to minimize execution round trips. Default: 65536.
+    #  - LIBRECHAT_CODE_IMAGE_CHUNK_BYTES: Exact bytes read per sandbox image window. Overrides the size derived from
+    # LIBRECHAT_CODE_SANDBOX_OUTPUT_MAX_SIZE; leave unset unless an exact override is required.
+    #  - CODE_ENVIRONMENT_PAIRING_USER_MAX: Maximum self-service code-worker pairing requests per user during one rate-limit window. Default: 5.
+    #  - CODE_ENVIRONMENT_PAIRING_USER_WINDOW: Self-service code-worker pairing rate-limit window in minutes. Default: 60.
+
+    # JWT Authentication
+    # The current self-hosted ClickHouse/code-interpreter service verifies short-lived LibreChat bearer tokens outside local mode. Set
+    # CODEAPI_AUTH_PROVIDER=librechat-jwt to enable token minting, then give Code Interpreter the public key that matches LibreChat's
+    # private signer. See Self-hosted JWT authentication for the paired service configuration and key-generation helper.
+    #  - CODEAPI_AUTH_PROVIDER: Set to librechat-jwt to mint per-user Code Interpreter bearer tokens. The compatibility value both also enables minting, but ClickHouse/code-interpreter expects librechat-jwt.
+    #  - CODEAPI_JWT_ENABLED: Explicitly enables Code Interpreter JWT minting when CODEAPI_AUTH_PROVIDER is not librechat-jwt or both. Default: false.
+    #  - CODEAPI_JWT_PRIVATE_KEY: Ed25519 or RSA private signing key in PEM format. Escaped \n sequences are converted to newlines.
+    #  - CODEAPI_JWT_PRIVATE_KEY_BASE64: Base64-encoded PEM private key. Used when CODEAPI_JWT_PRIVATE_KEY is unset.
+    #  - CODEAPI_JWT_PRIVATE_JWK_JSON: Private signing key as JWK JSON. Used when both PEM settings are unset.
+    #  - CODEAPI_JWT_ALGORITHM: Signing algorithm: EdDSA or RS256. Default: EdDSA.
+    #  - CODEAPI_JWT_KID: Signing-key ID included in the token header. Must identify the matching Code Interpreter verifier key. Default: lc-codeapi-2026-05.
+    #  - CODEAPI_JWT_ISSUER: Token issuer; must match Code Interpreter. Default: librechat.
+    #  - CODEAPI_JWT_AUDIENCE: Token audience; must match Code Interpreter. Default: codeapi.
+    #  - CODEAPI_JWT_TTL_SECONDS: Bearer-token lifetime in seconds. Invalid or larger values resolve to the 300-second default and maximum.
+    #  - CODEAPI_JWT_MINT_CACHE_SECONDS: How long LibreChat can reuse a token for the same authenticated context. Default and maximum: 30 seconds.
+    #  - CODEAPI_JWT_SINGLE_TENANT_ID: Fallback tenant ID when strict tenant isolation is disabled and no tenant context is available. Must match Code Interpreter. Default: legacy.
+
+    # At least one private-key source is required when JWT minting is enabled. If more than one is set, LibreChat checks CODEAPI_JWT_PRIVATE_KEY,
+    # then CODEAPI_JWT_PRIVATE_KEY_BASE64, then CODEAPI_JWT_PRIVATE_JWK_JSON. CODEAPI_JWT_KEY_ID remains a compatibility alias for CODEAPI_JWT_KID.
+
+    # Artifacts
+    # Artifacts leverage the CodeSandbox library for secure rendering of HTML/JS code. By default, the public CDN hosted by CodeSandbox is used.
+    # - SANDPACK_BUNDLER_URL: Specifies a custom bundler URL for Sandpack, used by Artifacts.
+    # can be self-hosted: https://sandpack.codesandbox.io/docs/guides/hosting-the-bundler
+    # https://github.com/LibreChat-AI/codesandbox-client
+
+    # Speech to Text and Text to speech
+    # STT and TTS are primarily configured through the speech: section in librechat.yaml. These environment variables are referenced in that configuration.
+    # See https://www.librechat.ai/docs/configuration/stt_tts for full YAML config options.
+    #  - STT_API_KEY: API key for Speech-to-Text service (e.g., OpenAI Whisper).
+    #  - TTS_API_KEY: API key for Text-to-Speech service (e.g., OpenAI TTS).
+
+    # Shared Links - Configure shared conversation links functionality.
+      - ALLOW_SHARED_LINKS: true
+      - ALLOW_SHARED_LINKS_PUBLIC: false
+      - SHARED_LINKS_SNAPSHOT_FILES: true
+
+    # Scheduled Chats
+    # - SCHEDULES_SINGLE_PROCESS: true
+    # - SCHEDULES_DISABLED: false
+
+    # Agent Event Runtime
+    # - AGENT_TRIGGERS_SELF_URL: Compatibility fallback for endpoints.agents.eventDriven.selfUrl. Base URL used by the Agent event host to re-enter fire, continue, and steer admission.
+    # - AGENT_EVENT_USER_MAX: Compatibility fallback for rateLimits.agentEvents.userMax. Maximum Agent Event requests per API-key principal in the configured window. Default: 40.
+    # - AGENT_EVENT_USER_WINDOW: Compatibility fallback for rateLimits.agentEvents.userWindowInMinutes. Agent Event rate-limit window in minutes. Default: 1.
+
+    # User System: Automated Moderation, Balance/ Token Usage, Registration and Social Logins, Email Password Reset
+    # https://www.librechat.ai/docs/configuration/dotenv#moderation
+    # https://www.librechat.ai/docs/configuration/dotenv#balance
+    # https://www.librechat.ai/docs/configuration/dotenv#registration-and-login
+    # https://www.librechat.ai/docs/configuration/dotenv#password-reset
+    # Admin Insights Dashboard:
+      - ENABLE_INSIGHTS: true
+
+    # Agent Conversation Control
+    # Maximum characters allowed in one mid-run Agent steering message.
+      - STEER_MAX_LENGTH: 16000
+
+    # Moderation
+    # https://www.librechat.ai/docs/configuration/mod_system
+    # The Automated Moderation System uses a scoring mechanism to track user violations. As users commit actions like
+    # excessive logins, registrations, or messaging, they accumulate violation scores. Upon reaching a set
+    # threshold, the user and their IP are temporarily banned. This system ensures platform security by
+    # monitoring and penalizing rapid or suspicious activities.
+    # - OPENAI_MODERATION: false
+    # - OPENAI_MODERATION_API_KEY:
+    # - BAN_VIOLATIONS: true
+    # - BAN_DURATION: 1000 * 60 * 60 * 2 # Milliseconds
+    # - BAN_INTERVAL: 20 # The user will be banned every time their score reaches/crosses over the interval threshold.
+    # - VIOLATION_SCORE_TTL: 1000 * 60 * 60 # How long a violation score lives without new violations
+    # - LOGIN_MAX: 7
+    # - LOGIN_WINDOW: 5
+    # - REGISTER_MAX: 5
+    # - REGISTER_WINDOW: 60
+    # - RESET_PASSWORD_MAX: 2
+    # - RESET_PASSWORD_WINDOW: 2
+    # - RESET_PASSWORD_SUBMISSION_MAX: 2
+    # - RESET_PASSWORD_SUBMISSION_WINDOW: 2
+    # - VERIFY_EMAIL_MAX: 2
+    # - VERIFY_EMAIL_WINDOW: 2
+    # - VERIFY_EMAIL_SUBMISSION_MAX: 2
+    # - VERIFY_EMAIL_SUBMISSION_WINDOW: 2
+    # - LOGIN_VIOLATION_SCORE: 1
+    # - REGISTRATION_VIOLATION_SCORE: 1
+    # - CONCURRENT_VIOLATION_SCORE: 1
+    # - MESSAGE_VIOLATION_SCORE: 1
+    # - NON_BROWSER_VIOLATION_SCORE: 20
+    # - ILLEGAL_MODEL_REQ_SCORE: 5
+    # - IMPORT_VIOLATION_SCORE: 1
+    # - FORK_VIOLATION_SCORE: 1
+    # - TTS_VIOLATION_SCORE: 0
+    # - STT_VIOLATION_SCORE: 0
+    # - FILE_UPLOAD_VIOLATION_SCORE: 0
+    # - RESET_PASSWORD_VIOLATION_SCORE: 1
+    # - VERIFY_EMAIL_VIOLATION_SCORE: 1
+    # - RESET_PASSWORD_SUBMISSION_VIOLATION_SCORE: 1
+    # - VERIFY_EMAIL_SUBMISSION_VIOLATION_SCORE: 1
+    # - TOOL_CALL_VIOLATION_SCORE: 0
+    # - CONVO_ACCESS_VIOLATION_SCORE: 0
+    # - LIMIT_CONCURRENT_MESSAGES: true # Whether to limit the amount of messages a user can send per request.
+    # - CONCURRENT_MESSAGE_MAX: 2 # The max amount of messages a user can send per request.
+    # - LIMIT_MESSAGE_IP: true
+    # - MESSAGE_IP_MAX: 40
+    # - MESSAGE_IP_WINDOW: 1
+    # - LIMIT_MESSAGE_USER: false
+    # - MESSAGE_USER_MAX: 40
+    # - MESSAGE_USER_WINDOW: 1
+    # - FILE_USAGE_USER_MAX: 120
+    # - FILE_USAGE_USER_WINDOW: 15
+    # - LIMIT_IMPORT_IP: true
+    # - IMPORT_IP_MAX: 100
+    # - IMPORT_IP_WINDOW: 1
+    # - LIMIT_IMPORT_USER: false
+    # - IMPORT_USER_MAX: 50
+    # - IMPORT_USER_WINDOW: 1
+    # - LIMIT_FORK_IP: true
+    # - FORK_IP_MAX: 30
+    # - FORK_IP_WINDOW: 1
+    # - LIMIT_FORK_USER: false
+    # - FORK_USER_MAX: 7
+    # - FORK_USER_WINDOW: 1
+    # - FILE_UPLOAD_IP_MAX: 100
+    # - FILE_UPLOAD_IP_WINDOW: 15
+    # - FILE_UPLOAD_USER_MAX: 50
+    # - FILE_UPLOAD_USER_WINDOW: 15
+    # - TTS_IP_MAX: 100
+    # - TTS_IP_WINDOW: 1
+    # - TTS_USER_MAX: 50
+    # - TTS_USER_WINDOW: 1
+    # - STT_IP_MAX: 100
+    # - STT_IP_WINDOW: 1
+    # - STT_USER_MAX: 50
+    # - STT_USER_WINDOW: 1
+    # - CHECK_BALANCE: false
+    # - START_BALANCE: 20000
+    #
 
     entrypoint: ["/bin/sh", "/patches/entrypoint-patch.sh"]
     command: ["npm", "run", "backend"]
@@ -104,6 +468,9 @@ services:
       - platform
 
   admin-panel:
+      # The API sends the browser back to ${ADMIN_PANEL_URL}/auth/openid/callback once
+      # the identity provider has authenticated an administrator. Without it the redirect
+      # falls back to the panel's container-internal address and the callback is lost.
     container_name: librechat-admin-panel
     image: ghcr.io/clickhouse/librechat-admin-panel:latest@sha256:a395465d1daa3c11495810a8c224df86675985d50de42e98e36eeedbd8aecb94
     restart: always
@@ -124,8 +491,8 @@ services:
       - ADMIN_SSO_ONLY: true
       - ADMIN_SESSION_IDLE_TIMEOUT_MS: 1800000
       - ADMIN_PANEL_PORT: 3000
-      - ADMIN_PANEL_HOST: ${ADMIN_PANEL_HOST}
-      - ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
+      - ADMIN_PANEL_HOST: ${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
+      - ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${PLATFORM_NETWORK:-dokploy-network}"
@@ -167,6 +534,7 @@ services:
     restart: always
 
   rag-api:
+    # https://www.librechat.ai/docs/configuration/rag_api
     container_name: librechat-rag-api
     image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
     restart: always
@@ -178,16 +546,19 @@ services:
       - POSTGRES_USER: ${POSTGRES_USER}
       - POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       - POSTGRES_DB: ${POSTGRES_DB}
+      - RAG_HOST: 0.0.0.0 # -> clarify, if this is valid
       - RAG_PORT: 8000
       - RAG_API_URL: ${RAG_API_URL}
       - COLLECTION_NAME: librechat
-      - EMBEDDINGS_PROVIDER: openai
+      - EMBEDDINGS_PROVIDER: openai # openai, azure, huggingface, huggingfacetei, or ollama
       - EMBEDDINGS_MODEL: embedding-openai
       - RAG_OPENAI_BASEURL: ${LLM_GATEWAY_BASEURL}
       - RAG_OPENAI_API_KEY: ${LLM_GATEWAY_API_KEY_ADMIN}
       - OPENAI_API_KEY: ${LLM_GATEWAY_API_KEY_ADMIN}
+      # - RAG_USE_FULL_CONTEXT: Fetch entire file context instead of top 4 results. Default: false.
       - CHUNK_SIZE: 1500
       - CHUNK_OVERLAP: 100
+
 
   vectordb:
     container_name: librechat-vectordb
