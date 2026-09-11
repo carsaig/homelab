@@ -149,8 +149,16 @@ const NO_CACHE: Record<string, string> = {
   Expires: '0',
 };
 
+const IMMUTABLE: Record<string, string> = {
+  'Cache-Control': 'public, max-age=31536000, immutable',
+};
+
+// Build output under assets/ is content-hashed (e.g. main-DtwN7LRi.js), so a changed
+// file always arrives under a new name and the old one can be cached indefinitely.
+const HASHED_ASSET = /(?:^|\/)assets\/.+-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/;
+
 function getCacheHeaders(filePath: string): Record<string, string> {
-  return NO_CACHE;
+  return HASHED_ASSET.test(filePath) ? IMMUTABLE : NO_CACHE;
 }
 
 const CSP_VALUE = [
@@ -254,7 +262,6 @@ const server = Bun.serve({
       for (const [k, v] of Object.entries(NO_CACHE)) {
         patched.headers.set(k, v);
       }
-      patched.headers.set('Clear-Site-Data', '"cache"');
       applySecurityHeaders(patched.headers);
       return patched;
     },
