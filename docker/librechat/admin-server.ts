@@ -186,6 +186,17 @@ const server = Bun.serve({
         patched.headers.set(k, v);
       }
 
+      // An earlier revision issued the session cookie for the whole origin. Browsers that
+      // saw it still hold that copy alongside the correctly scoped one and send both, so
+      // the wrong one can win. Expire the origin-wide copy; the panel only ever sets the
+      // cookie for its own path now.
+      if (BASE_PATH && contentType.includes('text/html')) {
+        patched.headers.append(
+          'set-cookie',
+          'admin-session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax',
+        );
+      }
+
       applySecurityHeaders(patched.headers);
       return patched;
     },
