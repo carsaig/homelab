@@ -33,19 +33,25 @@ function patchDistFiles() {
     console.error('[admin-panel] Error patching server.js:', err);
   }
 
-  // 2. Patch server manifest (_tanstack-start-manifest_*.js) so SSR emits /admin/assets/ URLs
+  // 2. Normalise the server manifest (_tanstack-start-manifest_*.js). Its entries reach
+  // the client router, which resolves them through the asset URL helper — and that helper
+  // already prepends the base to a path whose leading slash it strips. The manifest must
+  // therefore keep the build's own /assets/ paths: prefixing them here made every preload
+  // resolve to ${BASE_PATH}${BASE_PATH}/assets/... and fail.
   try {
     for (const f of readdirSync(join(SERVER_DIR, 'assets'))) {
       if (f.startsWith('_tanstack-start-manifest') && f.endsWith('.js')) {
         const p = join(SERVER_DIR, 'assets', f);
-        let code = readFileSync(p, 'utf8');
-        code = code.replaceAll(`${BASE_PATH}/assets/`, '/assets/').replaceAll('/assets/', `${BASE_PATH}/assets/`);
-        writeFileSync(p, code);
-        console.log('[admin-panel] Patched server manifest:', f);
+        const code = readFileSync(p, 'utf8');
+        const normalised = code.replaceAll(`${BASE_PATH}/assets/`, '/assets/');
+        if (normalised !== code) {
+          writeFileSync(p, normalised);
+          console.log('[admin-panel] Normalised server manifest:', f);
+        }
       }
     }
   } catch (err) {
-    console.error('[admin-panel] Error patching server manifest:', err);
+    console.error('[admin-panel] Error normalising server manifest:', err);
   }
 
   // 3. Patch client assets in dist/client/assets
