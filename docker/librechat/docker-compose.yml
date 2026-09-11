@@ -1,5 +1,6 @@
 services:
   api:
+    container_name: librechat-api
     image: ghcr.io/danny-avila/librechat:v0.8.8-rc2
     restart: always
     depends_on:
@@ -93,6 +94,7 @@ services:
       - platform
 
   admin-panel:
+    container_name: librechat-admin-panel
     image: ghcr.io/clickhouse/librechat-admin-panel:latest@sha256:a395465d1daa3c11495810a8c224df86675985d50de42e98e36eeedbd8aecb94
     restart: always
     depends_on:
@@ -129,6 +131,7 @@ services:
       - platform
 
   meilisearch:
+    container_name: librechat-meilisearch
     image: getmeili/meilisearch:v1.12
     restart: always
     environment:
@@ -141,16 +144,19 @@ services:
       - default
 
   mongodb:
+    container_name: librechat-mongodb
     image: mongo:7.0
     restart: always
     volumes:
       - mongodb_data:/data/db
 
   redis:
+    container_name: librechat-redis
     image: redis:7-alpine
     restart: always
 
   rag-api:
+    container_name: librechat-rag-api
     image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
     restart: always
     depends_on:
@@ -172,6 +178,7 @@ services:
       - CHUNK_OVERLAP=100
 
   vectordb:
+    container_name: librechat-vectordb
     image: pgvector/pgvector:0.8.0-pg17
     restart: always
     environment:
