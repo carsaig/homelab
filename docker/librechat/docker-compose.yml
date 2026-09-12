@@ -453,6 +453,9 @@ services:
     volumes:
       - ./librechat.yaml:/app/librechat.yaml:ro
       - ./entrypoint-patch.sh:/patches/entrypoint-patch.sh:ro
+      # Lokal hochgeladene Dateien. Ohne dieses Volume schreibt LibreChat in die
+      # Container-Schicht und verliert sie bei jedem Neubau.
+      - librechat_uploads:/app/uploads
       - librechat_images:/app/client/public/images
       - librechat_logs:/app/api/logs
     labels:
@@ -578,6 +581,7 @@ services:
 
 volumes:
   mongodb_data:
+  librechat_uploads:
   librechat_images:
   librechat_logs:
   pgvector_data:

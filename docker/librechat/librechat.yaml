@@ -21,19 +21,68 @@ cache: true
 
 interface:
   # Reine Oberflaechenschalter -- diese erzeugen keine Rollenberechtigung.
-  modelSelect: true
+  modelSelect: true      # Modellauswahl in der Oberflaeche; Voraussetzung fuer modelSpecs.addedEndpoints
+  parameters: true       # Temperature, Top-P, max_tokens im Seitenpanel
+  presets: true          # Voreinstellungen speichern und wiederverwenden
+  contextUsage: true     # verbrauchte Tokens pro Gespraech anzeigen
 
-  # Weitere dokumentierte Felder, noch nicht entschieden:
-  # - parameters: Modellparameter im Seitenpanel einblenden
-  # - presets: gespeicherte Voreinstellungen erlauben
-  # - contextUsage: Tokenverbrauch im Gespraech anzeigen
-  # - contextCost: Kosten anzeigen, braucht currency.code und currency.rate
+  # Datenschutz und Nutzungsbedingungen als Links in der Fussleiste, ohne
+  # Zustimmungsdialog. Sobald die beiden Seiten stehen, hier eintragen:
+  # privacyPolicy:
+  #   externalUrl: "https://…"
+  #   openNewTab: true
+  # termsOfService:
+  #   externalUrl: "https://…"
+  #   openNewTab: true
+
+  # Bewusst nicht gesetzt:
+  # - contextCost: Kosten in der Oberflaeche; Verbrauch reicht, Kosten stehen
+  #   im Admin-Insights-Dashboard (ENABLE_INSIGHTS ist gesetzt)
+  # - termsOfService.modalAcceptance: erzwungene Zustimmung, kommt mit der
+  #   Safety-Phase statt jetzt
   # - customWelcome: Begruessungstext, unterstuetzt {{user.name}}
   # - defaultPinnedTools: Werkzeuge, die von Anfang an angeheftet sind
-  # - privacyPolicy.externalUrl / openNewTab
-  # - termsOfService.externalUrl / modalAcceptance / modalTitle / modalContent
-  #   -> modalAcceptance erzwingt eine Zustimmung vor der ersten Nutzung
   # - endpointsMenu: deprecated, durch modelSelect ersetzt
+
+# Dateien: Limits, erlaubte Typen und Bildausgabe.
+# Einheit aller *SizeLimit-Werte ist MB.
+fileConfig:
+  # Harte Obergrenze des Servers, unabhaengig vom Endpunkt.
+  serverFileSizeLimit: 512
+  avatarSizeLimit: 2
+  # Obergrenze fuer Text, der aus einer Datei in den Kontext gezogen wird.
+  fileTokenLimit: 100000
+
+  endpoints:
+    # Gilt fuer jeden Endpunkt ohne eigenen Eintrag.
+    default:
+      fileLimit: 10
+      fileSizeLimit: 100
+      totalSizeLimit: 500
+      supportedMimeTypes:
+        - '^image/(jpeg|png|gif|webp|heic|heif|svg\+xml)$'
+        - '^application/pdf$'
+        - '^application/epub\+zip$'
+        - '^application/vnd\.openxmlformats-officedocument\..*$'
+        - '^application/vnd\.ms-(word|powerpoint|excel)$'
+        - '^application/vnd\.oasis\.opendocument\..*$'
+        - '^text/.*$'
+        - '^application/(json|xml|x-yaml|toml|rtf)$'
+
+  # Text, der beim Upload extrahiert und als Kontext uebergeben wird.
+  text:
+    supportedMimeTypes:
+      - '^text/(plain|markdown|csv|json|xml|html|css|javascript|typescript|x-python|x-java|x-csharp|x-php|x-ruby|x-go|x-rust|x-kotlin|x-swift|x-scala|x-perl|x-lua|x-shell|x-sql|x-yaml|x-toml)$'
+
+  # Von Modellen erzeugte Bilder.
+  imageGeneration:
+    percentage: 100
+    px: 1024
+
+  # Noch nicht aktiv, weil der jeweilige Dienst fehlt:
+  # ocr.supportedMimeTypes  -> braucht einen konfigurierten ocr-Block
+  # stt.supportedMimeTypes  -> braucht einen konfigurierten speech.stt-Block
+
 
 registration:
   socialLogins:
