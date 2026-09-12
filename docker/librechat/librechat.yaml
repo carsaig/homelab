@@ -114,6 +114,55 @@ endpoints:
       titleModel: "coding - adaptive"
       modelDisplayLabel: "Omniroute"
 
+# Sprache: Diktat (STT) und Vorlesen (TTS).
+#
+# Beide Richtungen laufen ueber den MCP-/Modell-Gateway, nicht direkt zu einem
+# Anbieter -- ein Anbieterwechsel ist damit eine Modellzeile, kein neuer
+# Schluessel und keine neue Abrechnung. Der Provider heisst bei LibreChat
+# 'openai', beschreibt aber nur das Protokoll: gesetzt ist ein 'url'-Feld,
+# der Vorgabewert api.openai.com wird nie erreicht.
+#
+# allowedAddresses ist Pflicht, nicht Kosmetik: der SSRF-Schutz sperrt den
+# CGNAT-Bereich aus RFC 6598 -- also genau den, in dem der Gateway liegt.
+# Ohne diese Ausnahme wird jede Anfrage vor dem Verlassen des Containers
+# verworfen. Die Liste erwartet Host:Port.
+speech:
+  tts:
+    allowedAddresses:
+      - "${SPEECH_HOST}"
+    openai:
+      url: "${SPEECH_URL}/audio/speech"
+      apiKey: "${SPEECH_AUTH}"
+      model: "Mixroute/gpt-4o-mini-tts"
+      # Die sechs Standardstimmen sind alle geprueft und sprechen Deutsch
+      # mit korrekter Betonung. Die Liste steuert nur das Auswahlmenue.
+      voices:
+        - "alloy"
+        - "echo"
+        - "fable"
+        - "nova"
+        - "onyx"
+        - "shimmer"
+  stt:
+    allowedAddresses:
+      - "${SPEECH_HOST}"
+    openai:
+      url: "${SPEECH_URL}/audio/transcriptions"
+      apiKey: "${SPEECH_AUTH}"
+      # Nachformatierendes Modell: liefert Gross-/Kleinschreibung, Umlaute und
+      # Satzzeichen. Ein rohes whisper-1 gibt denselben Satz in Versalien und
+      # ohne Interpunktion zurueck.
+      model: "Mixroute/gpt-4o-mini-transcribe"
+  speechTab:
+    # Vorbelegung der Nutzereinstellungen. Jeder kann sie im Profil aendern.
+    conversationMode: false   # Freihand-Dialog: Antwort wird sofort vorgelesen
+    advancedMode: false       # zeigt Regler fuer Pausenerkennung und Schwellen
+    speechToText: true
+    textToSpeech:
+      engineTTS: "openai"
+      voice: "nova"
+      automaticPlayback: false
+
 memory:
   disabled: false
   personalize: true
