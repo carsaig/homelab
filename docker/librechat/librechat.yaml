@@ -60,16 +60,16 @@ registration:
 
 endpoints:
   custom:
-    - name: "${LLM_GATEWAY_NAME}"
+    - name: "Omniroute"
       apiKey: "${LLM_GATEWAY_AUTH}"
-      baseURL: "${LLM_GATEWAY_BASEURL}"
+      baseURL: "http://omniroute:8000/v1"
       models:
         default:
-          - "${LLM_MODEL}"
+          - "coding-adaptive"
         fetch: true
       titleConvo: true
-      titleModel: "${LLM_MODEL}"
-      modelDisplayLabel: "${MODEL_DISPLAY_LABEL}"
+      titleModel: "coding-adaptive"
+      modelDisplayLabel: "Omniroute"
 
 memory:
   disabled: false
@@ -104,8 +104,8 @@ memory:
     When in doubt, store it — it is better to remember too much than too little.
   agent:
     enabled: true
-    provider: "${LLM_PROVIDER}"
-    model: "${LLM_MODEL}"
+    provider: "Omniroute"
+    model: "coding-adaptive"
     model_parameters:
       temperature: 0.2
       max_tokens: 2000
@@ -123,7 +123,7 @@ mcpServers:
 
 webSearch:
   searchProvider: "searxng"
-  searxngInstanceUrl: "${SEARXNG_INSTANCE_URL}"
+  searxngInstanceUrl: "http://searxng:8080"
   searxngSearchOptions:
     engines: "google,duckduckgo,brave,startpage"
     language: "all"
@@ -148,7 +148,7 @@ messageFilter:
 
 summarization:
   provider: 'openAI'
-  model: "${SUMMARY_MODEL}"
+  model: "cinf/gpt-5.4-mini"
   maxSummaryTokens: 4096
   reserveRatio: 0.05
   trigger:
