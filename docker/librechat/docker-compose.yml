@@ -257,7 +257,9 @@ services:
       TAVILY_API_KEY: ${SERVICES_LIBRECHAT_TAVILY_API_KEY}
       #TAVILY_SEARCH_URL:
       #TAVILY_EXTRACT_URL:
-     # - SEARXNG_INSTANCE_URL: steht als Literal in librechat.yaml
+     # LibreChat besteht im webSearch-Block auf Referenzen fuer JEDES Feld,
+     # auch fuer die nicht-geheime URL, und meldet sonst einen Konfigurationsfehler.
+      SEARXNG_INSTANCE_URL: http://searxng:8080
      # - SEARXNG_API_KEY: die eigene SearXNG-Instanz verlangt keinen Key.
      #   Auch in librechat.yaml entfernt, damit nichts darauf verweist.
       # SERPER_API_KEY: # https://serper.dev/api-keys

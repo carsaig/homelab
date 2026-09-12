@@ -123,7 +123,7 @@ mcpServers:
 
 webSearch:
   searchProvider: "searxng"
-  searxngInstanceUrl: "http://searxng:8080"
+  searxngInstanceUrl: "${SEARXNG_INSTANCE_URL}"
   searxngSearchOptions:
     engines: "google,duckduckgo,brave,startpage"
     language: "all"
