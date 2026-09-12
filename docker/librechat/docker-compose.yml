@@ -231,13 +231,15 @@ services:
     # konfiguriert, nicht ueber Env. SUPERMEMORY_API_KEY stand hier ohne Wirkung:
     # weder der Quellcode noch librechat.yaml lesen die Variable.
 
-    # File storage & CDN -> Use backblaze
-    # - AWS_ACCESS_KEY_ID: IAM user access key ID. Optional if using IRSA.
-    # - AWS_SECRET_ACCESS_KEY: IAM user secret access key. Optional if using IRSA.
-    # - AWS_REGION: eu-central-003
-    # - AWS_BUCKET_NAME: librechat
-    # - AWS_ENDPOINT_URL: https://s3.eu-central-003.backblazeb2.com
-    # - AWS_FORCE_PATH_STYLE: true
+    # Dateiablage: Backblaze B2 ueber die S3-kompatible Schnittstelle.
+    # Region, Bucket und Endpunkt sind keine Geheimnisse und stehen direkt hier;
+    # nur die beiden Zugangsdaten kommen aus dem Vault.
+      AWS_REGION: eu-central-003
+      AWS_BUCKET_NAME: librechat
+      AWS_ENDPOINT_URL: https://s3.eu-central-003.backblazeb2.com
+      AWS_FORCE_PATH_STYLE: true
+      AWS_ACCESS_KEY_ID: ${SERVICES_LIBRECHAT_AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${SERVICES_LIBRECHAT_AWS_SECRET_ACCESS_KEY}
     # - CLOUDFRONT_KEY_PAIR_ID: CloudFront public key pair ID. Required for signed cookies and signed CloudFront download URLs.
     # - CLOUDFRONT_PRIVATE_KEY: CloudFront private key PEM. Required for signed cookies and signed CloudFront download URLs. Preserve PEM newlines when injecting this secret.
 

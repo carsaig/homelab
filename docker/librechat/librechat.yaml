@@ -45,6 +45,12 @@ interface:
   # - defaultPinnedTools: Werkzeuge, die von Anfang an angeheftet sind
   # - endpointsMenu: deprecated, durch modelSelect ersetzt
 
+# Ablageort hochgeladener Dateien. Umstellen auf 's3', sobald
+# AWS_ACCESS_KEY_ID und AWS_SECRET_ACCESS_KEY gesetzt sind -- mit leeren
+# Zugangsdaten schlagen alle Uploads fehl.
+# Feinere Steuerung ginge ueber fileStrategies mit avatar/image/document.
+fileStrategy: local
+
 # Dateien: Limits, erlaubte Typen und Bildausgabe.
 # Einheit aller *SizeLimit-Werte ist MB.
 fileConfig:
