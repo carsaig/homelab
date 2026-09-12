@@ -251,10 +251,13 @@ services:
 
     # Inference
     # custom endpoint config: https://www.librechat.ai/docs/quick_start/custom_endpoints
-     # Modell, Anbietername, Anzeigename und baseURL stehen als Literal in
+     # Modell, Anbietername und Anzeigename stehen als Literal in
      # librechat.yaml -- LibreChat loest ${VAR} zwar bei Verwendung auf, aber
-     # nicht in jedem Feld. Nur das Secret bleibt eine Referenz.
+     # nicht in jedem Feld. Secret und Adresse bleiben Referenzen: der Gateway
+     # laeuft auf einem anderen Host und wird ueber das Tailnet angesprochen,
+     # die Adresse gehoert deshalb nicht in ein oeffentliches Repository.
       LLM_GATEWAY_AUTH: ${SERVICES_LIBRECHAT_LLM_GATEWAY_AUTH}
+      LLM_GATEWAY_URL: ${SERVICES_LIBRECHAT_LLM_GATEWAY_URL}
     # MCP_URL steht oben unter 'MCP Server' und kommt aus dem Vault:
     # lokal http://bifrost:8080/mcp, alternativ der Cloudflare-Gateway.
      # - GEMINI_API_KEY:

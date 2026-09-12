@@ -97,15 +97,21 @@ registration:
 
 endpoints:
   custom:
+    # Der Gateway laeuft auf einem anderen Host. Erreichbar ist er ueber das
+    # Tailnet -- deshalb steht die Adresse in einer Variablen und nicht hier;
+    # ein Containername aus einem fremden Docker-Netz kann nicht aufloesen.
     - name: "Omniroute"
       apiKey: "${LLM_GATEWAY_AUTH}"
-      baseURL: "http://omniroute:8000/v1"
+      baseURL: "${LLM_GATEWAY_URL}"
+      # Die Modellliste holt LibreChat beim Gateway ab; sichtbar ist genau das,
+      # was der hinterlegte Schluessel dort freigeschaltet hat. 'default' legt
+      # nur fest, was ohne Auswahl vorbelegt ist.
       models:
         default:
-          - "coding-adaptive"
+          - "coding - adaptive"
         fetch: true
       titleConvo: true
-      titleModel: "coding-adaptive"
+      titleModel: "coding - adaptive"
       modelDisplayLabel: "Omniroute"
 
 memory:
