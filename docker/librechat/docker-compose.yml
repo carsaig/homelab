@@ -231,15 +231,19 @@ services:
     # konfiguriert, nicht ueber Env. SUPERMEMORY_API_KEY stand hier ohne Wirkung:
     # weder der Quellcode noch librechat.yaml lesen die Variable.
 
-    # Dateiablage: Backblaze B2 ueber die S3-kompatible Schnittstelle.
-    # Region, Bucket und Endpunkt sind keine Geheimnisse und stehen direkt hier;
-    # nur die beiden Zugangsdaten kommen aus dem Vault.
-      AWS_REGION: eu-central-003
-      AWS_BUCKET_NAME: librechat
-      AWS_ENDPOINT_URL: https://s3.eu-central-003.backblazeb2.com
+    # Dateiablage ueber eine S3-kompatible Schnittstelle. Anbieterwechsel
+    # laeuft ueber den Vault, damit hier nichts steht, was die Infrastruktur
+    # verraet -- die R2-Endpunkt-URL enthaelt zum Beispiel die Account-ID.
+    # LibreChat legt unter den Praefixen images/ und avatars/ ab.
+      AWS_REGION: ${SERVICES_LIBRECHAT_AWS_REGION}
+      AWS_BUCKET_NAME: ${SERVICES_LIBRECHAT_AWS_BUCKET_NAME}
+      AWS_ENDPOINT_URL: ${SERVICES_LIBRECHAT_AWS_ENDPOINT_URL}
       AWS_FORCE_PATH_STYLE: true
       AWS_ACCESS_KEY_ID: ${SERVICES_LIBRECHAT_AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${SERVICES_LIBRECHAT_AWS_SECRET_ACCESS_KEY}
+    # Lebensdauer signierter Download-Links. Der Default von 120 Sekunden ist
+    # fuer Bilder in laufenden Gespraechen zu kurz; Maximum sind 7 Tage.
+      S3_URL_EXPIRY_SECONDS: 3600
     # - CLOUDFRONT_KEY_PAIR_ID: CloudFront public key pair ID. Required for signed cookies and signed CloudFront download URLs.
     # - CLOUDFRONT_PRIVATE_KEY: CloudFront private key PEM. Required for signed cookies and signed CloudFront download URLs. Preserve PEM newlines when injecting this secret.
 
