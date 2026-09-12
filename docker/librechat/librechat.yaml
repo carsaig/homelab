@@ -1,57 +1,39 @@
 version: "1.3.14"
 cache: true
 
-# Bootstrap the built-in USER role as a quarantine role. New registrations keep
-# these permissions until an administrator assigns STUDENT or TEACHER access.
-# Role-specific model and endpoint visibility is managed through Admin Panel
-# configuration overrides.
+# ROLLENBERECHTIGUNGEN STEHEN NICHT MEHR HIER.
+#
+# LibreChat schreibt jedes unter `interface:` gesetzte Berechtigungsfeld bei
+# JEDEM Start in die Rollen ADMIN und USER -- beide bekommen denselben Wert.
+# Eine privilegierte Admin-Rolle laesst sich so nicht von einer
+# eingeschraenkten Nutzerrolle unterscheiden. Fehlt ein Feld, meldet LibreChat
+# "Preserving existing permissions" und laesst die Datenbank unangetastet.
+# Die Doku bezeichnet den Weg ueber diese Datei als "deprecated for ongoing
+# management"; Verwaltung laeuft ueber das Admin-Panel.
+#
+# Betroffene Felder, die deshalb bewusst fehlen:
+#   agents, remoteAgents, skills, prompts, mcpServers, sharedLinks,
+#   peoplePicker, marketplace, memories, bookmarks, multiConvo,
+#   temporaryChat, runCode, webSearch, fileSearch, fileCitations
+#
+# Rollen in der Datenbank: ADMIN, USER (Quarantaene), STUDENT, TEACHER.
+# STUDENT und TEACHER sind eigene Rollen und werden vom Seeder nie beruehrt.
+
 interface:
-  mcpServers:
-    use: false
-    create: false
-    share: false
-    public: false
-    configureObo: false
-  prompts:
-    use: false
-    create: false
-    share: false
-    public: false
-  bookmarks: false
-  memories: false
-  multiConvo: false
-  agents:
-    use: false
-    create: false
-    share: false
-    public: false
-  remoteAgents:
-    use: false
-    create: false
-    share: false
-    public: false
-  skills:
-    use: false
-    create: false
-    share: false
-    public: false
-    defaultActiveOnShare: false
-  sharedLinks:
-    create: false
-    share: false
-    public: false
-    snapshotFiles: false
-  temporaryChat: false
-  runCode: false
-  webSearch: false
-  fileSearch: false
-  fileCitations: false
-  peoplePicker:
-    users: false
-    groups: false
-    roles: false
-  marketplace:
-    use: false
+  # Reine Oberflaechenschalter -- diese erzeugen keine Rollenberechtigung.
+  modelSelect: true
+
+  # Weitere dokumentierte Felder, noch nicht entschieden:
+  # - parameters: Modellparameter im Seitenpanel einblenden
+  # - presets: gespeicherte Voreinstellungen erlauben
+  # - contextUsage: Tokenverbrauch im Gespraech anzeigen
+  # - contextCost: Kosten anzeigen, braucht currency.code und currency.rate
+  # - customWelcome: Begruessungstext, unterstuetzt {{user.name}}
+  # - defaultPinnedTools: Werkzeuge, die von Anfang an angeheftet sind
+  # - privacyPolicy.externalUrl / openNewTab
+  # - termsOfService.externalUrl / modalAcceptance / modalTitle / modalContent
+  #   -> modalAcceptance erzwingt eine Zustimmung vor der ersten Nutzung
+  # - endpointsMenu: deprecated, durch modelSelect ersetzt
 
 registration:
   socialLogins:
