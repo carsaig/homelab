@@ -128,8 +128,6 @@ endpoints:
 # verworfen. Die Liste erwartet Host:Port.
 speech:
   tts:
-    allowedAddresses:
-      - "${SPEECH_HOST}"
     openai:
       url: "${SPEECH_URL}/audio/speech"
       apiKey: "${SPEECH_AUTH}"
@@ -146,8 +144,6 @@ speech:
         - "Zephyr"
         - "nova"
   stt:
-    allowedAddresses:
-      - "${SPEECH_HOST}"
     openai:
       url: "${SPEECH_URL}/audio/transcriptions"
       apiKey: "${SPEECH_AUTH}"
