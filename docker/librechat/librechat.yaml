@@ -128,6 +128,15 @@ endpoints:
 # verworfen. Die Liste erwartet Host:Port.
 speech:
   tts:
+    # AUSNAHME VON DER SONST GELTENDEN REGEL, dass hier keine Hostnamen und
+    # Ports stehen -- bewusst und abgesprochen. Es geht technisch nicht anders:
+    # die Zod-Pruefung dieses Feldes laeuft VOR der Aufloesung von ${...} und
+    # verwirft eine Referenz als ungueltiges host:port. Der Prozess beendet
+    # sich dann beim Start. Eine Umgebungsvariable fuer die Ausnahmeliste gibt
+    # es nicht. Ohne den Eintrag blockt der SSRF-Schutz jede Anfrage, denn er
+    # zaehlt den Bereich 100.64/10 zu den privaten Adressen.
+    allowedAddresses:
+      - "zurich.tortoise-bramble.ts.net:20100"
     openai:
       url: "${SPEECH_URL}/audio/speech"
       apiKey: "${SPEECH_AUTH}"
@@ -144,6 +153,15 @@ speech:
         - "Zephyr"
         - "nova"
   stt:
+    # AUSNAHME VON DER SONST GELTENDEN REGEL, dass hier keine Hostnamen und
+    # Ports stehen -- bewusst und abgesprochen. Es geht technisch nicht anders:
+    # die Zod-Pruefung dieses Feldes laeuft VOR der Aufloesung von ${...} und
+    # verwirft eine Referenz als ungueltiges host:port. Der Prozess beendet
+    # sich dann beim Start. Eine Umgebungsvariable fuer die Ausnahmeliste gibt
+    # es nicht. Ohne den Eintrag blockt der SSRF-Schutz jede Anfrage, denn er
+    # zaehlt den Bereich 100.64/10 zu den privaten Adressen.
+    allowedAddresses:
+      - "zurich.tortoise-bramble.ts.net:20100"
     openai:
       url: "${SPEECH_URL}/audio/transcriptions"
       apiKey: "${SPEECH_AUTH}"
