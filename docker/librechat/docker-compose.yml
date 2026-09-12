@@ -74,7 +74,7 @@ services:
       # meldet der Identity Provider redirect_uri mismatch.
       DOMAIN_CLIENT: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       DOMAIN_SERVER: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
-      ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
+      ADMIN_PANEL_URL: https://${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
       NO_INDEX: true
 
       # Logging:
@@ -486,9 +486,9 @@ services:
     environment:
       API_SERVER_URL: http://api:3080
       VITE_API_BASE_URL: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
-      # The panel is published on its own host and serves itself from /admin there, which
-      # is the layout its bundle is built for.
-      VITE_BASE_PATH: /admin
+     # - VITE_BASE_PATH: nicht setzen. Das Bundle dieses Images ist fuer / gebaut;
+     #   ein Praefix verschiebt nur die Server-Routen, nicht die Assets, und
+     #   erzeugt die Schleife /admin -> /admin/ -> /admin.
       DOMAIN_CLIENT: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       DOMAIN_SERVER: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
       SESSION_SECRET: ${SERVICES_LIBRECHAT_ADMIN_PANEL_SESSION_SECRET}
@@ -499,7 +499,7 @@ services:
       ADMIN_SESSION_IDLE_TIMEOUT_MS: 1800000
       ADMIN_PANEL_PORT: 3000
       ADMIN_PANEL_HOST: ${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
-      ADMIN_PANEL_URL: ${SERVICES_LIBRECHAT_ADMIN_PANEL_URL}
+      ADMIN_PANEL_URL: https://${SERVICES_LIBRECHAT_ADMIN_PANEL_HOST}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${SERVICES_LIBRECHAT_PLATFORM_NETWORK}"
