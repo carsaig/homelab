@@ -115,23 +115,42 @@ endpoints:
       modelDisplayLabel: "Omniroute"
 
     # Zweiter Gateway, derselbe Host, anderer Port. Bedient auch die
-    # Sprachendpunkte weiter unten. 'fetch' holt die komplette Modellliste
-    # des Schluessels -- das sind vierstellig viele Eintraege, die Auswahl
-    # im Menue ist entsprechend lang.
+    # Sprachendpunkte weiter unten.
+    #
+    # fetch steht auf false, und das ist keine Bequemlichkeit: der Gateway
+    # meldet rund 1500 Modelle und braucht dafuer etwa zehn Sekunden.
+    # LibreChats Abruf bricht nach fuenf ab -- der Wert steht als Konstante
+    # im Bundle und laesst sich nicht konfigurieren. Die Liste unten ist
+    # ausserdem die brauchbarere Oberflaeche: jeder Eintrag ist einzeln
+    # angefragt worden und hat auf Deutsch geantwortet.
+    #
+    # Die Praefixe des Gateways sind grossgeschrieben. 'eurouter/' wird nicht
+    # als Anbieter erkannt, faellt auf einen Standardanbieter durch und
+    # erzeugt Fehler, die nach etwas ganz anderem aussehen.
     - name: "Bifrost"
       apiKey: "${BIFROST_AUTH}"
       baseURL: "${BIFROST_URL}"
       models:
-        # Anbieter in der EU, mit Guthaben, im Rundlauf geprueft. Die
-        # Praefixe des Gateways sind grossgeschrieben -- 'eurouter/' wird
-        # nicht erkannt und faellt auf einen Standardanbieter durch.
         default:
+          # Anbieter in der EU, alle unter zwei Sekunden bis auf qwen3.8
           - "Eurouter/glm-5.3"
-        fetch: true
+          - "Eurouter/deepseek-v4-pro"
+          - "Eurouter/deepseek-v4-flash-0731"
+          - "Eurouter/qwen3.8-27b"
+          - "Eurouter/kimi-k3"
+          - "Eurouter/minimax-m3"
+          - "Eurouter/gpt-5.6-sol"
+          # Ausserhalb der EU, dafuer mit Guthaben
+          - "Cheapinference/gemini-3.7-flash"
+          - "Cheapinference/claude-opus-5-fast"
+          - "Cheapinference/gpt-6-astra"
+          - "gemini/gemini-3.5-flash"
+          - "gemini/gemini-3.1-pro-preview"
+        fetch: false
       titleConvo: true
       # Bewusst nicht die flash-Variante: die verbraucht das Token-Budget
       # fuer den internen Denkschritt und liefert einen leeren Titel.
-      titleModel: "Eurouter/glm-5.3"
+      titleModel: "Eurouter/deepseek-v4-pro"
       modelDisplayLabel: "Bifrost"
 
 # Sprache: Diktat (STT) und Vorlesen (TTS).
