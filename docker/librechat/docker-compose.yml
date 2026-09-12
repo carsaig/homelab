@@ -235,8 +235,10 @@ services:
     # laeuft ueber den Vault, damit hier nichts steht, was die Infrastruktur
     # verraet -- die R2-Endpunkt-URL enthaelt zum Beispiel die Account-ID.
     # LibreChat legt unter den Praefixen images/ und avatars/ ab.
-      AWS_REGION: ${SERVICES_LIBRECHAT_AWS_REGION}
-      AWS_BUCKET_NAME: ${SERVICES_LIBRECHAT_AWS_BUCKET_NAME}
+      # 'auto' ist bei R2 vorgeschrieben, eine echte Region wird abgelehnt.
+      AWS_REGION: auto
+      AWS_BUCKET_NAME: librechat
+      # Nur der Endpunkt kommt aus dem Vault: er enthaelt die Account-ID.
       AWS_ENDPOINT_URL: ${SERVICES_LIBRECHAT_AWS_ENDPOINT_URL}
       AWS_FORCE_PATH_STYLE: true
       AWS_ACCESS_KEY_ID: ${SERVICES_LIBRECHAT_AWS_ACCESS_KEY_ID}
