@@ -133,16 +133,18 @@ speech:
     openai:
       url: "${SPEECH_URL}/audio/speech"
       apiKey: "${SPEECH_AUTH}"
-      model: "Mixroute/gpt-4o-mini-tts"
-      # Die sechs Standardstimmen sind alle geprueft und sprechen Deutsch
-      # mit korrekter Betonung. Die Liste steuert nur das Auswahlmenue.
+      # Gemini TTS gibt nativ nur PCM aus; der Gateway transkodiert nach MP3.
+      # LibreChat sendet gar kein response_format, genau das trifft den
+      # richtigen Pfad -- ein explizites "mp3" wuerde der Anbieter ablehnen.
+      model: "openrouter/google/gemini-3.1-flash-tts-preview"
+      # Eigene Stimmnamen. Die OpenAI-Namen alloy/echo/fable/onyx/shimmer
+      # quittiert der Anbieter mit 400; nur diese fuenf sind geprueft.
       voices:
-        - "alloy"
-        - "echo"
-        - "fable"
+        - "Kore"
+        - "Puck"
+        - "Charon"
+        - "Zephyr"
         - "nova"
-        - "onyx"
-        - "shimmer"
   stt:
     allowedAddresses:
       - "${SPEECH_HOST}"
@@ -150,8 +152,12 @@ speech:
       url: "${SPEECH_URL}/audio/transcriptions"
       apiKey: "${SPEECH_AUTH}"
       # Nachformatierendes Modell: liefert Gross-/Kleinschreibung, Umlaute und
-      # Satzzeichen. Ein rohes whisper-1 gibt denselben Satz in Versalien und
-      # ohne Interpunktion zurueck.
+      # Satzzeichen. Rohes whisper schreibt stattdessen ss statt ss-Ligatur
+      # und laesst die Interpunktion weg.
+      #
+      # UEBERGANGSLOESUNG. Dieser Anbieter ist nicht die erste Wahl, aber die
+      # bevorzugten Whisper-Quellen sind am virtuellen Schluessel des Gateways
+      # noch gesperrt. Sobald sie frei sind, ist das hier eine Zeile.
       model: "Mixroute/gpt-4o-mini-transcribe"
   speechTab:
     # Vorbelegung der Nutzereinstellungen. Jeder kann sie im Profil aendern.
@@ -160,7 +166,7 @@ speech:
     speechToText: true
     textToSpeech:
       engineTTS: "openai"
-      voice: "nova"
+      voice: "Kore"
       automaticPlayback: false
 
 memory:
