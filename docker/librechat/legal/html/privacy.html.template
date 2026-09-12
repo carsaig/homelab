@@ -14,12 +14,6 @@
   <div class="brand"><span class="dot"></span>${SERVICE_NAME}</div>
   <h1>Datenschutzerklärung</h1>
   <p class="meta">Stand: ${UPDATED}</p>
-  <div class="note">
-    <strong>Entwurf.</strong> Dieser Text ist eine strukturierte Vorlage und wurde
-    nicht juristisch geprüft. Er beschreibt, wie der Dienst technisch arbeitet,
-    ersetzt aber keine Rechtsberatung und ist vor einem produktiven Einsatz –
-    insbesondere mit Minderjährigen – fachlich zu überprüfen.
-  </div>
 </header>
 
 <h2><span class="num">1</span>Verantwortlicher</h2>

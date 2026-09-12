@@ -7,9 +7,6 @@
   --text: #0d0d0d;
   --muted: #5d5d5d;
   --accent: #10a37f;
-  --note-bg: #fff8e6;
-  --note-border: #e0b200;
-  --note-text: #6b4e00;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -19,10 +16,7 @@
     --text: #ececec;
     --muted: #b4b4b4;
     --accent: #19c37d;
-    --note-bg: #3a3320;
-    --note-border: #a8850f;
-    --note-text: #f0d999;
-  }
+        }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -52,16 +46,6 @@ a:hover { text-decoration: underline; }
 dl { margin: .6rem 0; }
 dt { font-weight: 600; margin-top: .9rem; }
 dd { margin: .15rem 0 0 0; color: var(--muted); }
-.note {
-  background: var(--note-bg);
-  border: 1px solid var(--note-border);
-  color: var(--note-text);
-  border-radius: .6rem;
-  padding: .9rem 1.1rem;
-  margin: 1.5rem 0 0;
-  font-size: .925rem;
-}
-.note strong { font-weight: 650; }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

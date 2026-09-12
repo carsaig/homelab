@@ -536,12 +536,19 @@ services:
       - "traefik.docker.network=${SERVICES_LIBRECHAT_PLATFORM_NETWORK}"
       # Laengere Regel als die des Chats, gewinnt damit ohnehin; die Prioritaet
       # steht trotzdem explizit da, damit es niemand nachrechnen muss.
-      - "traefik.http.routers.librechat-legal.entrypoints=websecure"
-      - "traefik.http.routers.librechat-legal.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`) && (PathPrefix(`/privacy`) || PathPrefix(`/terms`))"
-      - "traefik.http.routers.librechat-legal.priority=100"
-      - "traefik.http.routers.librechat-legal.service=librechat-legal-service"
-      - "traefik.http.routers.librechat-legal.tls=true"
-      - "traefik.http.routers.librechat-legal.tls.certresolver=letsencrypt"
+      # Zwei Router wie beim Chat: der Cloudflare-Tunnel trifft Traefik auf dem
+      # web-Entrypoint, nicht auf websecure. Fehlt web, beantwortet LibreChat
+      # die Pfade selbst und sein Router meldet "No route matches URL".
+      - "traefik.http.routers.librechat-legal-web.entrypoints=web"
+      - "traefik.http.routers.librechat-legal-web.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`) && (PathPrefix(`/privacy`) || PathPrefix(`/terms`))"
+      - "traefik.http.routers.librechat-legal-web.priority=100"
+      - "traefik.http.routers.librechat-legal-web.service=librechat-legal-service"
+      - "traefik.http.routers.librechat-legal-websecure.entrypoints=websecure"
+      - "traefik.http.routers.librechat-legal-websecure.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`) && (PathPrefix(`/privacy`) || PathPrefix(`/terms`))"
+      - "traefik.http.routers.librechat-legal-websecure.priority=100"
+      - "traefik.http.routers.librechat-legal-websecure.service=librechat-legal-service"
+      - "traefik.http.routers.librechat-legal-websecure.tls=true"
+      - "traefik.http.routers.librechat-legal-websecure.tls.certresolver=letsencrypt"
       - "traefik.http.services.librechat-legal-service.loadbalancer.server.port=8080"
     networks:
       - default
