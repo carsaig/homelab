@@ -1,0 +1,76 @@
+/* An LibreChats Oberflaeche angelehnt: dieselbe Schriftfamilie, dieselbe
+   ruhige Flaeche, Hell- und Dunkelmodus ueber prefers-color-scheme. */
+:root {
+  --bg: #ffffff;
+  --surface: #f9f9f9;
+  --border: #e5e5e5;
+  --text: #0d0d0d;
+  --muted: #5d5d5d;
+  --accent: #10a37f;
+  --note-bg: #fff8e6;
+  --note-border: #e0b200;
+  --note-text: #6b4e00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #212121;
+    --surface: #2f2f2f;
+    --border: #424242;
+    --text: #ececec;
+    --muted: #b4b4b4;
+    --accent: #19c37d;
+    --note-bg: #3a3320;
+    --note-border: #a8850f;
+    --note-text: #f0d999;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Söhne, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.wrap { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 600; letter-spacing: -.01em; }
+.dot { width: .65rem; height: .65rem; border-radius: 50%; background: var(--accent); flex: none; }
+h1 { font-size: 1.9rem; line-height: 1.25; letter-spacing: -.02em; margin: 1.2rem 0 .4rem; }
+h2 { font-size: 1.15rem; letter-spacing: -.01em; margin: 2.4rem 0 .6rem; }
+h2 .num { color: var(--muted); font-weight: 500; margin-right: .5rem; }
+p, li { color: var(--text); }
+.lead, .meta { color: var(--muted); }
+.meta { font-size: .875rem; margin: 0; }
+ul, ol { padding-left: 1.3rem; }
+li { margin: .3rem 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+dl { margin: .6rem 0; }
+dt { font-weight: 600; margin-top: .9rem; }
+dd { margin: .15rem 0 0 0; color: var(--muted); }
+.note {
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
+  color: var(--note-text);
+  border-radius: .6rem;
+  padding: .9rem 1.1rem;
+  margin: 1.5rem 0 0;
+  font-size: .925rem;
+}
+.note strong { font-weight: 650; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: .6rem;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+}
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .95rem; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .875rem; }
+footer a { margin-right: 1rem; }

@@ -27,13 +27,14 @@ interface:
   contextUsage: true     # verbrauchte Tokens pro Gespraech anzeigen
 
   # Datenschutz und Nutzungsbedingungen als Links in der Fussleiste, ohne
-  # Zustimmungsdialog. Sobald die beiden Seiten stehen, hier eintragen:
-  # privacyPolicy:
-  #   externalUrl: "https://…"
-  #   openNewTab: true
-  # termsOfService:
-  #   externalUrl: "https://…"
-  #   openNewTab: true
+  # Zustimmungsdialog. Die Seiten liefert der Service 'legal' auf derselben
+  # Domain aus; relative Pfade halten den Hostnamen aus dieser Datei heraus.
+  privacyPolicy:
+    externalUrl: "/privacy"
+    openNewTab: true
+  termsOfService:
+    externalUrl: "/terms"
+    openNewTab: true
 
   # Bewusst nicht gesetzt:
   # - contextCost: Kosten in der Oberflaeche; Verbrauch reicht, Kosten stehen

@@ -516,6 +516,37 @@ services:
       - default
       - platform
 
+  # Datenschutz und Nutzungsbedingungen unter /privacy und /terms derselben
+  # Domain wie der Chat. Eigener Container, damit LibreChat unangetastet bleibt.
+  legal:
+    container_name: librechat-legal
+    image: nginx:1.29-alpine
+    restart: always
+    environment:
+      SERVICE_NAME: LibreChat
+      SERVICE_URL: https://${SERVICES_LIBRECHAT_DOMAIN_HOST}
+      CONTACT_EMAIL: ${SERVICES_LIBRECHAT_EMAIL_FROM}
+      UPDATED: "12. September 2026"
+    volumes:
+      - ./legal/html:/html-src:ro
+      - ./legal/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./legal/entrypoint/15-render-html.sh:/docker-entrypoint.d/15-render-html.sh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${SERVICES_LIBRECHAT_PLATFORM_NETWORK}"
+      # Laengere Regel als die des Chats, gewinnt damit ohnehin; die Prioritaet
+      # steht trotzdem explizit da, damit es niemand nachrechnen muss.
+      - "traefik.http.routers.librechat-legal.entrypoints=websecure"
+      - "traefik.http.routers.librechat-legal.rule=Host(`${SERVICES_LIBRECHAT_DOMAIN_HOST}`) && (PathPrefix(`/privacy`) || PathPrefix(`/terms`))"
+      - "traefik.http.routers.librechat-legal.priority=100"
+      - "traefik.http.routers.librechat-legal.service=librechat-legal-service"
+      - "traefik.http.routers.librechat-legal.tls=true"
+      - "traefik.http.routers.librechat-legal.tls.certresolver=letsencrypt"
+      - "traefik.http.services.librechat-legal-service.loadbalancer.server.port=8080"
+    networks:
+      - default
+      - platform
+
   meilisearch:
     container_name: librechat-meilisearch
     image: getmeili/meilisearch:v1.12

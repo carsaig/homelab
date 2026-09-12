@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Datenschutzerklärung – ${SERVICE_NAME}</title>
+<link rel="stylesheet" href="/privacy/_style.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand"><span class="dot"></span>${SERVICE_NAME}</div>
+  <h1>Datenschutzerklärung</h1>
+  <p class="meta">Stand: ${UPDATED}</p>
+  <div class="note">
+    <strong>Entwurf.</strong> Dieser Text ist eine strukturierte Vorlage und wurde
+    nicht juristisch geprüft. Er beschreibt, wie der Dienst technisch arbeitet,
+    ersetzt aber keine Rechtsberatung und ist vor einem produktiven Einsatz –
+    insbesondere mit Minderjährigen – fachlich zu überprüfen.
+  </div>
+</header>
+
+<h2><span class="num">1</span>Verantwortlicher</h2>
+<p>
+  Verantwortlich für die Datenverarbeitung ist der Betreiber dieser Instanz.
+  Anfragen zum Datenschutz richten Sie bitte an
+  <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.
+</p>
+
+<h2><span class="num">2</span>Zweck der Verarbeitung</h2>
+<p>
+  Der Dienst stellt eine Oberfläche bereit, über die Sie Unterhaltungen mit
+  Sprachmodellen führen, Dateien hochladen und Werkzeuge nutzen können.
+  Verarbeitet werden ausschließlich die Daten, die für den Betrieb dieser
+  Funktionen, für die Zugangskontrolle und für die Betriebssicherheit
+  erforderlich sind.
+</p>
+
+<h2><span class="num">3</span>Welche Daten verarbeitet werden</h2>
+<table>
+  <tr><th>Kategorie</th><th>Inhalt</th><th>Zweck</th></tr>
+  <tr><td>Kontodaten</td><td>Kennung, Anzeigename, E‑Mail‑Adresse, zugewiesene Rolle</td><td>Anmeldung, Rechtevergabe</td></tr>
+  <tr><td>Unterhaltungen</td><td>Ihre Eingaben und die Antworten des Modells</td><td>Darstellung und Fortsetzung Ihrer Gespräche</td></tr>
+  <tr><td>Dateien</td><td>Von Ihnen hochgeladene Dokumente und Bilder sowie daraus erzeugte Textauszüge</td><td>Beantwortung von Fragen zu diesen Dateien</td></tr>
+  <tr><td>Gedächtnis</td><td>Aus Unterhaltungen abgeleitete Merksätze</td><td>Personalisierung folgender Gespräche</td></tr>
+  <tr><td>Protokolle</td><td>Zeitpunkt, aufgerufener Pfad, Statuscode, technische Fehler</td><td>Betrieb, Fehlersuche, Missbrauchserkennung</td></tr>
+</table>
+
+<h2><span class="num">4</span>Rechtsgrundlage</h2>
+<p>
+  Die Verarbeitung stützt sich auf die Erfüllung des Nutzungsverhältnisses
+  (Art. 6 Abs. 1 lit. b DSGVO) sowie auf das berechtigte Interesse an einem
+  sicheren und funktionsfähigen Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Soweit
+  eine Verarbeitung darüber hinausgeht, erfolgt sie nur mit Ihrer Einwilligung
+  (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit widerrufen können.
+</p>
+
+<h2><span class="num">5</span>Weitergabe an Sprachmodelle</h2>
+<p>
+  Ihre Eingaben werden zur Beantwortung an ein Sprachmodell übermittelt. Je nach
+  gewähltem Modell geschieht das auf eigener Infrastruktur oder bei einem
+  externen Anbieter. Bei externen Anbietern verlassen die übermittelten Inhalte
+  die Systeme des Betreibers; es gelten zusätzlich die Bedingungen des
+  jeweiligen Anbieters.
+</p>
+<div class="card">
+  <strong>Bitte beachten:</strong> Geben Sie keine Inhalte ein, die Sie einem
+  Dritten nicht anvertrauen würden – insbesondere keine Gesundheitsdaten,
+  Zugangsdaten oder personenbezogenen Daten anderer Personen.
+</div>
+
+<h2><span class="num">6</span>Speicherdauer</h2>
+<dl>
+  <dt>Unterhaltungen und Dateien</dt>
+  <dd>Bis Sie sie löschen oder Ihr Konto aufgelöst wird.</dd>
+  <dt>Gedächtniseinträge</dt>
+  <dd>Bis Sie sie löschen; sie lassen sich in der Oberfläche einsehen und entfernen.</dd>
+  <dt>Protokolldaten</dt>
+  <dd>Kurzfristig, ausschließlich zur Fehlersuche und Missbrauchserkennung.</dd>
+  <dt>Kontodaten</dt>
+  <dd>Für die Dauer des Nutzungsverhältnisses.</dd>
+</dl>
+
+<h2><span class="num">7</span>Empfänger und Drittlandübermittlung</h2>
+<p>
+  Eine Weitergabe an Dritte erfolgt nur, soweit sie für den Betrieb erforderlich
+  ist – etwa an den Anbieter des gewählten Sprachmodells oder an einen
+  Speicherdienst für hochgeladene Dateien. Sofern dabei Daten in Länder außerhalb
+  des Europäischen Wirtschaftsraums übermittelt werden, geschieht dies auf
+  Grundlage geeigneter Garantien.
+</p>
+
+<h2><span class="num">8</span>Ihre Rechte</h2>
+<ul>
+  <li>Auskunft über die zu Ihrer Person gespeicherten Daten</li>
+  <li>Berichtigung unrichtiger Daten</li>
+  <li>Löschung sowie Einschränkung der Verarbeitung</li>
+  <li>Datenübertragbarkeit</li>
+  <li>Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen</li>
+  <li>Beschwerde bei einer Datenschutzaufsichtsbehörde</li>
+</ul>
+<p>
+  Unterhaltungen, Dateien und Gedächtniseinträge können Sie jederzeit selbst in
+  der Oberfläche löschen. Für alles Weitere genügt eine Nachricht an
+  <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.
+</p>
+
+<h2><span class="num">9</span>Minderjährige</h2>
+<p>
+  Wird der Dienst im schulischen Umfeld eingesetzt, erfolgt die Nutzung durch
+  Minderjährige nur im Rahmen der jeweiligen schulischen Vereinbarung und, soweit
+  erforderlich, mit Einwilligung der Erziehungsberechtigten.
+</p>
+
+<h2><span class="num">10</span>Änderungen</h2>
+<p>
+  Diese Erklärung wird angepasst, wenn sich der Funktionsumfang des Dienstes
+  ändert. Maßgeblich ist die jeweils unter dieser Adresse veröffentlichte
+  Fassung.
+</p>
+
+<footer>
+  <a href="${SERVICE_URL}">Zurück zum Chat</a>
+  <a href="/terms">Nutzungsbedingungen</a>
+</footer>
+
+</div>
+</body>
+</html>

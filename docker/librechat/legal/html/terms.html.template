@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Nutzungsbedingungen – ${SERVICE_NAME}</title>
+<link rel="stylesheet" href="/terms/_style.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand"><span class="dot"></span>${SERVICE_NAME}</div>
+  <h1>Nutzungsbedingungen</h1>
+  <p class="meta">Stand: ${UPDATED}</p>
+  <div class="note">
+    <strong>Entwurf.</strong> Dieser Text ist eine strukturierte Vorlage und wurde
+    nicht juristisch geprüft. Er hält die Hausregeln des Betriebs fest, ersetzt
+    aber keine Rechtsberatung und ist vor einem produktiven Einsatz fachlich zu
+    überprüfen.
+  </div>
+</header>
+
+<h2><span class="num">1</span>Geltungsbereich</h2>
+<p>
+  Diese Bedingungen gelten für die Nutzung dieser Instanz. Mit der Anmeldung
+  erkennen Sie sie an. Es besteht kein Anspruch auf Zugang; der Betreiber
+  entscheidet über die Vergabe und den Entzug von Konten.
+</p>
+
+<h2><span class="num">2</span>Konto und Zugang</h2>
+<ul>
+  <li>Das Konto ist persönlich und nicht übertragbar.</li>
+  <li>Zugangsdaten sind geheim zu halten. Ein Verdacht auf Missbrauch ist unverzüglich zu melden.</li>
+  <li>Der Zugang kann an eine Rolle gebunden sein, die den Funktionsumfang bestimmt.</li>
+</ul>
+
+<h2><span class="num">3</span>Zulässige Nutzung</h2>
+<p>
+  Der Dienst steht für Lern-, Arbeits- und Erprobungszwecke zur Verfügung. Sie
+  bleiben für das verantwortlich, was Sie mit den erzeugten Inhalten tun.
+</p>
+
+<h2><span class="num">4</span>Unzulässige Nutzung</h2>
+<ul>
+  <li>Erzeugen oder Verbreiten rechtswidriger, gewaltverherrlichender, diskriminierender oder jugendgefährdender Inhalte</li>
+  <li>Verletzung von Urheber-, Persönlichkeits- oder Markenrechten</li>
+  <li>Eingabe personenbezogener Daten Dritter ohne deren Kenntnis</li>
+  <li>Automatisierte Massenabfragen, Umgehen von Begrenzungen, Angriffe auf die Infrastruktur</li>
+  <li>Versuche, Sicherheitsvorkehrungen oder Rollenbeschränkungen zu umgehen</li>
+  <li>Weitergabe des Zugangs an Dritte</li>
+</ul>
+
+<h2><span class="num">5</span>Von Sprachmodellen erzeugte Inhalte</h2>
+<div class="card">
+  Sprachmodelle erzeugen Text auf Grundlage von Wahrscheinlichkeiten. Antworten
+  können <strong>sachlich falsch, unvollständig oder frei erfunden</strong> sein –
+  auch dann, wenn sie überzeugend klingen. Prüfen Sie alles nach, worauf Sie sich
+  verlassen wollen. Insbesondere in medizinischen, rechtlichen und finanziellen
+  Fragen ersetzen die Antworten keine fachliche Beratung.
+</div>
+
+<h2><span class="num">6</span>Ihre Inhalte</h2>
+<p>
+  Die Rechte an den von Ihnen eingegebenen Inhalten bleiben bei Ihnen. Sie räumen
+  dem Betreiber lediglich das Recht ein, sie zum Zweck der Erbringung des
+  Dienstes zu verarbeiten und zu speichern. Eine Nutzung Ihrer Inhalte zum
+  Training eigener Modelle findet nicht statt.
+</p>
+
+<h2><span class="num">7</span>Verfügbarkeit</h2>
+<p>
+  Der Dienst wird ohne Zusicherung einer bestimmten Verfügbarkeit bereitgestellt.
+  Wartungsarbeiten, Störungen und Änderungen am Funktionsumfang sind jederzeit
+  möglich. Sichern Sie Inhalte, auf die Sie angewiesen sind, selbst.
+</p>
+
+<h2><span class="num">8</span>Begrenzungen</h2>
+<p>
+  Zum Schutz des Betriebs gelten Begrenzungen für Anzahl und Größe von Dateien,
+  für die Häufigkeit von Anfragen und für die nutzbaren Funktionen. Diese
+  Begrenzungen können ohne Vorankündigung angepasst werden.
+</p>
+
+<h2><span class="num">9</span>Haftung</h2>
+<p>
+  Der Betreiber haftet für Vorsatz und grobe Fahrlässigkeit. Bei einfacher
+  Fahrlässigkeit besteht eine Haftung nur bei Verletzung wesentlicher
+  Vertragspflichten und nur begrenzt auf den vorhersehbaren, typischen Schaden.
+  Die Haftung für Schäden aus der Verletzung des Lebens, des Körpers oder der
+  Gesundheit bleibt unberührt.
+</p>
+
+<h2><span class="num">10</span>Beendigung</h2>
+<p>
+  Bei Verstößen gegen diese Bedingungen kann der Zugang eingeschränkt oder
+  entzogen werden. Sie können die Löschung Ihres Kontos jederzeit verlangen.
+</p>
+
+<h2><span class="num">11</span>Änderungen und Kontakt</h2>
+<p>
+  Änderungen dieser Bedingungen werden an dieser Stelle veröffentlicht. Fragen
+  richten Sie an <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.
+</p>
+
+<footer>
+  <a href="${SERVICE_URL}">Zurück zum Chat</a>
+  <a href="/privacy">Datenschutz</a>
+</footer>
+
+</div>
+</body>
+</html>
