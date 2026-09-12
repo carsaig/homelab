@@ -213,9 +213,22 @@ speech:
     # Vorbelegung der Nutzereinstellungen. Jeder kann sie im Profil aendern.
     conversationMode: false   # Freihand-Dialog: Antwort wird sofort vorgelesen
     advancedMode: false       # zeigt Regler fuer Pausenerkennung und Schwellen
-    speechToText: true
+    # NICHT auf true abkuerzen. Der Client setzt dann engineSTT auf seinen
+    # Vorgabewert "browser", benutzt also die Web-Speech-API des Browsers:
+    # das Mikrofon wird angefordert, die Aufnahme bricht nach einem Moment
+    # ab, und am Server kommt nie eine Anfrage an. "external" ist der Weg
+    # ueber den oben konfigurierten Anbieter.
+    speechToText:
+      engineSTT: "external"
+      languageSTT: "de-DE"
+      # Nach dem Loslassen sofort transkribieren, statt auf einen zweiten
+      # Klick zu warten.
+      autoTranscribeAudio: true
     textToSpeech:
-      engineTTS: "openai"
+      # Wie oben: "external" ist der Weg ueber den Server. Der Anbieter
+      # selbst wird aus speech.tts.openai gelesen, nicht aus diesem Feld --
+      # es entscheidet nur, ob der Client den Browser oder den Server nimmt.
+      engineTTS: "external"
       voice: "Kore"
       automaticPlayback: false
 
