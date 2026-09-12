@@ -4,17 +4,6 @@ set -e
 node - << "NODE_PATCH"
 const fs = require("fs");
 
-// 0. Preprocess and substitute environment variables in /app/librechat.yaml -> /tmp/librechat.yaml
-const configYamlPath = "/app/librechat.yaml";
-if (fs.existsSync(configYamlPath)) {
-  let content = fs.readFileSync(configYamlPath, "utf8");
-  content = content.replace(/\$\{([A-Za-z0-9_]+)\}/g, (match, varName) => {
-    return process.env[varName] !== undefined ? process.env[varName] : match;
-  });
-  fs.writeFileSync("/tmp/librechat.yaml", content, "utf8");
-  console.log("[entrypoint-patch] /tmp/librechat.yaml written with substituted env vars");
-}
-
 // 1. Patch agents/chat.js (configMiddleware)
 const chatPath = "/app/api/server/routes/agents/chat.js";
 if (fs.existsSync(chatPath)) {
@@ -268,18 +257,6 @@ export class Strategy {
   console.log("[entrypoint-patch] deterministic passport.js with state fallback written");
 }
 
-// 4. Patch loginLimiter.js default max
-const limiterPath = "/app/api/server/middleware/limiters/loginLimiter.js";
-if (fs.existsSync(limiterPath)) {
-  let content = fs.readFileSync(limiterPath, "utf8");
-  content = content.replace(
-    "const { LOGIN_WINDOW = 5, LOGIN_MAX = 7, LOGIN_VIOLATION_SCORE: score } = process.env;",
-    "const { LOGIN_WINDOW = 1, LOGIN_MAX = 1000, LOGIN_VIOLATION_SCORE: score } = process.env;"
-  );
-  fs.writeFileSync(limiterPath, content, "utf8");
-  console.log("[entrypoint-patch] loginLimiter.js patched cleanly");
-}
 NODE_PATCH
 
-export CONFIG_PATH="/tmp/librechat.yaml"
 exec "$@"
