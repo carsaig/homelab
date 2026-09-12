@@ -114,6 +114,26 @@ endpoints:
       titleModel: "coding - adaptive"
       modelDisplayLabel: "Omniroute"
 
+    # Zweiter Gateway, derselbe Host, anderer Port. Bedient auch die
+    # Sprachendpunkte weiter unten. 'fetch' holt die komplette Modellliste
+    # des Schluessels -- das sind vierstellig viele Eintraege, die Auswahl
+    # im Menue ist entsprechend lang.
+    - name: "Bifrost"
+      apiKey: "${BIFROST_AUTH}"
+      baseURL: "${BIFROST_URL}"
+      models:
+        # Anbieter in der EU, mit Guthaben, im Rundlauf geprueft. Die
+        # Praefixe des Gateways sind grossgeschrieben -- 'eurouter/' wird
+        # nicht erkannt und faellt auf einen Standardanbieter durch.
+        default:
+          - "Eurouter/glm-5.3"
+        fetch: true
+      titleConvo: true
+      # Bewusst nicht die flash-Variante: die verbraucht das Token-Budget
+      # fuer den internen Denkschritt und liefert einen leeren Titel.
+      titleModel: "Eurouter/glm-5.3"
+      modelDisplayLabel: "Bifrost"
+
 # Sprache: Diktat (STT) und Vorlesen (TTS).
 #
 # Beide Richtungen laufen ueber den MCP-/Modell-Gateway, nicht direkt zu einem
@@ -138,8 +158,8 @@ speech:
     allowedAddresses:
       - "zurich.tortoise-bramble.ts.net:20100"
     openai:
-      url: "${SPEECH_URL}/audio/speech"
-      apiKey: "${SPEECH_AUTH}"
+      url: "${BIFROST_URL}/audio/speech"
+      apiKey: "${BIFROST_AUTH}"
       # Gemini TTS gibt nativ nur PCM aus; der Gateway transkodiert nach MP3.
       # LibreChat sendet gar kein response_format, genau das trifft den
       # richtigen Pfad -- ein explizites "mp3" wuerde der Anbieter ablehnen.
@@ -163,8 +183,8 @@ speech:
     allowedAddresses:
       - "zurich.tortoise-bramble.ts.net:20100"
     openai:
-      url: "${SPEECH_URL}/audio/transcriptions"
-      apiKey: "${SPEECH_AUTH}"
+      url: "${BIFROST_URL}/audio/transcriptions"
+      apiKey: "${BIFROST_AUTH}"
       # Anbieter in der EU, gegen eine echte Aufnahme geprueft: gibt den Satz
       # zeichengenau zurueck, mit Umlauten, Eszett und Interpunktion, und
       # ohne das fuehrende Leerzeichen, das die anderen Whisper-Varianten
