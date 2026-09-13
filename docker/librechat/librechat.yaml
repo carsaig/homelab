@@ -279,10 +279,15 @@ memory:
     Store each fact as a concise key-value pair. Use the most specific key that fits.
     If a fact updates an existing memory, overwrite it. If contradicted, delete the old entry.
     When in doubt, store it — it is better to remember too much than too little.
+  # Der Gedaechtnis-Agent laeuft bei jeder Nachricht mit. Zeigt er auf ein
+  # Modell, das der Endpunkt nicht kennt, scheitert er jedes Mal -- und der
+  # Fehlschlag faellt in denselben Lauf wie die Antwort.
+  # 'provider' ist der Name des Endpunkts, 'model' muss exakt so heissen wie
+  # beim Gateway.
   agent:
     enabled: true
-    provider: "Omniroute"
-    model: "coding-adaptive"
+    provider: "Bifrost"
+    model: "Eurouter/deepseek-v4-flash-0731"
     model_parameters:
       temperature: 0.2
       max_tokens: 2000
