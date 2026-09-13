@@ -177,7 +177,11 @@ speech:
     allowedAddresses:
       - "zurich.tortoise-bramble.ts.net:20100"
     openai:
-      url: "${BIFROST_URL}/audio/speech"
+      # Literal, nicht referenziert: openAIProvider liest dieses Feld roh.
+      # Ein ${...} bleibt stehen, new URL() wirft "Invalid URL", und der
+      # Fehler entsteht vor dem inneren try -- im Log steht dann nur die
+      # nichtssagende Sammelmeldung. Nur apiKey wird aufgeloest.
+      url: "http://zurich.tortoise-bramble.ts.net:20100/v1/audio/speech"
       apiKey: "${BIFROST_AUTH}"
       # Gemini TTS gibt nativ nur PCM aus; der Gateway transkodiert nach MP3.
       # LibreChat sendet gar kein response_format, genau das trifft den
@@ -202,7 +206,8 @@ speech:
     allowedAddresses:
       - "zurich.tortoise-bramble.ts.net:20100"
     openai:
-      url: "${BIFROST_URL}/audio/transcriptions"
+      # Literal, siehe Begruendung beim TTS-Block weiter oben.
+      url: "http://zurich.tortoise-bramble.ts.net:20100/v1/audio/transcriptions"
       apiKey: "${BIFROST_AUTH}"
       # Anbieter in der EU, gegen eine echte Aufnahme geprueft: gibt den Satz
       # zeichengenau zurueck, mit Umlauten, Eszett und Interpunktion, und
