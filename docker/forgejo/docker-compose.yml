@@ -58,6 +58,7 @@ services:
       # --- CI -------------------------------------------------------------
       # Enabled ahead of any runner being registered; inert until one exists.
       FORGEJO__actions__ENABLED: "true"
+      FORGEJO__webhook__ALLOWED_HOST_LIST: ${FORGEJO__webhook__ALLOWED_HOST_LIST}
 
       FORGEJO__log__LEVEL: ${FORGEJO_LOG_LEVEL}
     volumes:
