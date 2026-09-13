@@ -164,6 +164,32 @@ endpoints:
       titleModel: "Eurouter/deepseek-v4-pro"
       modelDisplayLabel: "Bifrost"
 
+# Texterkennung fuer hochgeladene Dokumente.
+#
+# Zur Strategie: "azure_mistral_ocr" heisst nach Azure, meint aber nur eine
+# andere Uebertragungsform. Sie schickt das Dokument als base64-Daten-URI
+# direkt an /ocr. Die Variante "mistral_ocr" wuerde die Datei vorher ueber
+# POST /files hochladen und sich eine signierte URL geben lassen -- und
+# genau dieser Upload ist am Gateway nicht verfuegbar: der native Anbieter
+# verlangt aktivierte Batch-APIs, der selbst angelegte meldet
+# "file_upload is not supported". Der Weg ohne Upload funktioniert.
+#
+# Sobald dieser Block existiert, laufen ALLE PDFs darueber statt durch den
+# lokalen Parser -- getUploadExtractedTextPlan entscheidet anhand von
+# ocrConfigured. Der Gewinn: auch gescannte Dokumente ohne Textebene werden
+# lesbar, und das Ergebnis ist Text, den jedes Modell versteht.
+ocr:
+  strategy: "azure_mistral_ocr"
+  # Der Anbieterpraefix ist Teil des Bezeichners und gross geschrieben --
+  # ohne ihn faellt die Anfrage auf einen Standardanbieter, der kein OCR kann.
+  mistralModel: "mistral/mistral-ocr-4-1"
+  apiKey: "${OCR_API_KEY}"
+  baseURL: "${OCR_BASEURL}"
+  # Wie bei Sprache: der SSRF-Schutz sperrt den Bereich, in dem der Gateway
+  # liegt, und dieses Feld wird vor der Aufloesung von ${...} geprueft.
+  allowedAddresses:
+    - "zurich.tortoise-bramble.ts.net:20100"
+
 # Sprache: Diktat (STT) und Vorlesen (TTS).
 #
 # Beide Richtungen laufen ueber den MCP-/Modell-Gateway, nicht direkt zu einem
