@@ -130,6 +130,17 @@ endpoints:
     - name: "Bifrost"
       apiKey: "${BIFROST_AUTH}"
       baseURL: "${BIFROST_URL}"
+      # Der Gateway ist fuer LibreChat beides: Modellanbieter UND MCP-Server.
+      # Ohne diese Kopfzeile haengt er seine MCP-Werkzeuge zusaetzlich an jede
+      # Anfrage. Das Modell ruft dann etwas auf, das LibreChat nie deklariert
+      # hat, die Antwort traegt tool_calls ausserhalb der eigenen Registrierung
+      # und der Agentenlauf bricht mit "Unhandled error type" ab.
+      #
+      # Leerer Wert heisst laut Doku deny-all: kein MCP-Client steuert
+      # Werkzeuge zu dieser Anfrage bei. LibreChats eigener MCP-Client ist
+      # nicht betroffen -- der spricht den /mcp-Endpunkt an, nicht diesen.
+      headers:
+        x-bf-mcp-include-clients: ""
       models:
         default:
           # Anbieter in der EU, alle unter zwei Sekunden bis auf qwen3.8
