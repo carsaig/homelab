@@ -623,6 +623,75 @@ jobs:
           test "$(grep -c 'Mcp-Session-Id header is required' "$F")" = "0"
           test "$(grep -c 'errorResponse(' "$F")" -ge 2
 
+      - name: Emit prefixed compatible-provider models in canonical catalog mode
+        # With MODELS_CATALOG_PREFIX_MODE=canonical, catalog.ts skips both
+        # emission branches for an OpenAI-compatible provider node that has an
+        # operator-assigned prefix: the alias branch is gated on includeAlias
+        # (false in canonical mode) and the canonical branch on !prefix (to keep
+        # the internal node UUID out of the public catalog). Such a provider's
+        # synced and custom models therefore never reach /v1/models, and cannot
+        # be selected as allowed models on an API key.
+        # Fix: also take the alias branch when a prefix exists. For prefixed
+        # nodes, "prefix/model" is the only public id. The emitted id is the one
+        # the alias and dual modes already produce, so routing and key-policy
+        # matching (which work on the request id, not the catalog) are unchanged.
+        #
+        # Scope: `prefix` is only set for provider nodes, so built-in providers
+        # are unaffected, and dual/alias modes already took this branch.
+        # `if (includeAlias) {` occurs four times upstream; `prefix` is in scope
+        # at only two of them, so each edit is anchored on surrounding context.
+        # Delete this step if upstream fixes the canonical-mode emission.
+        run: |
+          set -euo pipefail
+          cat > /tmp/patch-catalog-prefixed-providers.mjs << 'NODEEOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          function assertOneMatch(path, label, content, anchor) {
+            const count = content.split(anchor).length - 1;
+            if (count !== 1) {
+              console.error(
+                `Expected exactly 1 match of ${label} in ${path}, found ${count} - upstream source changed, aborting patch.`
+              );
+              process.exit(1);
+            }
+          }
+
+          const path = "omniroute-src/src/app/api/v1/models/catalog.ts";
+          let content = readFileSync(path, "utf8");
+
+          const edits = [
+            [
+              "synced-models alias emission",
+              "            continue;\n          }\n\n          if (includeAlias) {\n            models.push({\n              id: aliasId,",
+              "            continue;\n          }\n\n          if (includeAlias || prefix) {\n            models.push({\n              id: aliasId,",
+            ],
+            [
+              "synced-models audio emission",
+              'if (includeAlias && modelType === "audio") {',
+              'if ((includeAlias || prefix) && modelType === "audio") {',
+            ],
+            [
+              "custom-models alias emission",
+              "              ? getCustomVisionCapabilityFields(model, aliasId, modelId)\n              : null;\n\n          if (includeAlias) {",
+              "              ? getCustomVisionCapabilityFields(model, aliasId, modelId)\n              : null;\n\n          if (includeAlias || prefix) {",
+            ],
+          ];
+
+          for (const [label, anchor] of edits) assertOneMatch(path, label, content, anchor);
+          for (const [, anchor, replacement] of edits) content = content.replace(anchor, replacement);
+          writeFileSync(path, content);
+          console.log("catalog.ts patched: prefixed compatible providers emit prefix/model in canonical mode");
+          NODEEOF
+
+          node /tmp/patch-catalog-prefixed-providers.mjs
+
+          echo "--- Verifying patched catalog ---"
+          F="omniroute-src/src/app/api/v1/models/catalog.ts"
+          # -a: upstream catalog.ts contains a byte that makes grep treat it as binary.
+          grep -an "includeAlias || prefix" "$F"
+          test "$(grep -ac 'includeAlias || prefix' "$F")" = "3"
+          test "$(grep -ac 'if (includeAlias) {' "$F")" = "2"
+
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
