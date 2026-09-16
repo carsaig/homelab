@@ -692,6 +692,24 @@ jobs:
           test "$(grep -ac 'includeAlias || prefix' "$F")" = "3"
           test "$(grep -ac 'if (includeAlias) {' "$F")" = "2"
 
+      - name: Pin minimatch's brace-expansion override to the locked version
+        # package.json overrides minimatch's brace-expansion with "^1.1.18" while
+        # package-lock.json pins 1.1.18. npm ci resolves that override range
+        # against the registry, so once a newer 1.1.x is published (1.1.19-21
+        # appeared 2026-09-14) it reports "Missing: brace-expansion@1.1.21 from
+        # lock file" and refuses to install - the unchanged release branch stops
+        # building. Pinning the range to the locked version restores the sync.
+        run: |
+          set -euo pipefail
+          FILE="omniroute-src/package.json"
+          MATCHES=$(grep -c '"brace-expansion": "\^1\.1\.18"' "$FILE" || true)
+          if [ "$MATCHES" -ne 1 ]; then
+            echo "Expected exactly 1 match of '\"brace-expansion\": \"^1.1.18\"' in $FILE, found $MATCHES - upstream source changed, aborting patch." >&2
+            exit 1
+          fi
+          perl -i -pe 's/"brace-expansion": "\^1\.1\.18"/"brace-expansion": "1.1.18"/' "$FILE"
+          grep -n '"brace-expansion": "1.1.18"' "$FILE"
+
       - name: Build and push (linux/arm64 only)
         uses: docker/build-push-action@v6
         with:
